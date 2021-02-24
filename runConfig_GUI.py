@@ -2,10 +2,6 @@ import sys
 from PyQt5.QtCore import left, Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QMainWindow, QComboBox, QLineEdit, QPushButton, QHBoxLayout, \
     QVBoxLayout, QFormLayout
-
-import MenuBaseCode
-
-
 class RunConfigWindow(QWidget):
     def __init__(self, *args, **kwargs):
         # init the window
@@ -17,7 +13,30 @@ class RunConfigWindow(QWidget):
         # Create Outer base layer
         outerLayout = QVBoxLayout()
 
-        #Create Run Config Details laer
+        menuLayout = QVBoxLayout()
+
+        # Title component of menu
+        menuTitle = QLabel()
+        menuTitle.setText("SEA Menu")
+        menuTitle.setAlignment(Qt.AlignCenter)
+
+        # button component of menu
+        hLayout = QHBoxLayout()
+        runButton = QPushButton("Run")
+        toolButton = QPushButton("Tools")
+        hLayout.addStretch()
+        hLayout.addWidget(runButton)
+        hLayout.addStretch()
+        hLayout.addWidget(toolButton)
+        hLayout.addStretch()
+
+        # Add the widgets we created to the menu layout
+        menuLayout.addWidget(menuTitle)
+        hButtons = QWidget()
+        hButtons.setLayout(hLayout)
+        menuLayout.addWidget(hButtons)
+
+        # Create Run Config Details layer
         runConfigLayout = QFormLayout()
         runConfigLayout.addRow("Run Name:", QLineEdit())
         runConfigLayout.addRow("Run Description:", QLineEdit())
@@ -32,16 +51,19 @@ class RunConfigWindow(QWidget):
         runConfigLayout.addRow("Run Configuration File", QLineEdit())
         runConfigLayout.addWidget(buttonConfigFile)
 
-
         # set button layout
         buttonLayout = QHBoxLayout()
         buttonLayout.addStretch(1)
         buttonLayout.addWidget(QPushButton("Save"))
         buttonLayout.addWidget(QPushButton("Cancel"))
 
+
+        outerLayout.addLayout(menuLayout)
         outerLayout.addLayout(runConfigLayout)
         outerLayout.addLayout(buttonLayout)
         self.setLayout(outerLayout)
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
