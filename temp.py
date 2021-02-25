@@ -10,7 +10,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         #Set the Window Title
-        self.setWindowTitle("Tool Run List")
+        self.setWindowTitle("XML Report")
         
         
         
@@ -73,22 +73,30 @@ class MainWindow(QMainWindow):
         self.scan.addItems(["NESSUS","NMAP" ])
         
         #Remove button in row
+        add=QPushButton("ADD")
+       
+        remove=QPushButton("REMOVE")
         orRow.addStretch()
         orRow.addWidget(self.r)
         orRow.addStretch()
         orRow.addWidget(self.scan)
         orRow.addStretch()
-        orRow.addWidget(QPushButton("REMOVE"))
-        
-        #last row of buttons generate and cancel
+        orRow.addWidget(remove)
+        orRow.addStretch()
+        orRow.addWidget(add)
+        add.clicked.connect(self.addRow)
+      
+            
+         #last row of buttons generate and cancel
         XML = QHBoxLayout()
         oneButton = QPushButton("GENERATE")
-        XML.addStretch()
+      
         twoButton = QPushButton("CANCEL")
         XML.addStretch()
-        XML.addWidget(oneButton)
-        XML.addStretch()
         XML.addWidget(twoButton)
+        XML.addStretch()
+        oneButton.setStyleSheet("background-color: green")
+        XML.addWidget(oneButton)
      
         
         #Add the widgets we created to the menu layout
@@ -111,24 +119,31 @@ class MainWindow(QMainWindow):
         orRows.setLayout(orRow)
         menuLayout.addWidget(orRows)
         
-        menuLayout.addWidget(self.make_HBox(QPushButton("ADD"),0))
-        
-      
-        
+
         #adding buttons
         xmlButtons=QWidget()
         xmlButtons.setLayout(XML)
         menuLayout.addWidget(xmlButtons)
-        
-        
-        
         
         #Make a Widget to hold the layout and set it as the window's menu
         menuWidget = QWidget()
         menuWidget.setLayout(menuLayout)               
         self.setMenuWidget(menuWidget)
         
-     #pad a widget with horizontal spacing or stretching     
+    def addRow(self):
+        addedRow=QHBoxLayout()
+        l4=QLabel()
+        l4.setText(self.r.currentText())
+        l5=QLabel()
+        l5.setText(self.scan.currentText())
+        addedRow.addStretch()
+        addedRow.addWidget(l4)
+        addedRows=QWidget()
+        addedRows.setLayout(addedRow)
+       
+        print(self.r.currentText()+self.scan.currentText())
+        
+    #pad a widget with horizontal spacing or stretching     
     def make_HBox(self, widget, spacingType):         
          layout = QHBoxLayout()         
          if spacingType:             
