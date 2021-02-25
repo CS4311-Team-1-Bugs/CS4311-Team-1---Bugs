@@ -66,7 +66,6 @@ class MainWindow(QMainWindow):
     def make_mainLayout(self):
         # Title component of menu
         menuTitle = QLabel()
-        # Color + Title        
         menuTitle.setText("  Scan Statistical Table  ")
         menuTitle.setFont(QFont("Times", 18))
         menuTitle.setStyleSheet("border: 2px solid black; color: #000000")
@@ -266,6 +265,13 @@ class MainWindow(QMainWindow):
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        vertical = scanList.verticalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        scanList.verticalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        scanList.verticalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        scanList.verticalHeader().setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
+        scanList.verticalHeader().setSectionResizeMode(5, QtWidgets.QHeaderView.ResizeToContents)
+        # scanList.verticalHeader().setSectionResizeMode(6, QtWidgets.QHeaderView.ResizeToContents)
+
 
         return scanList
 
