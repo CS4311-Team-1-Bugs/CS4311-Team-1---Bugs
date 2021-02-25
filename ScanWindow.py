@@ -66,6 +66,7 @@ class MainWindow(QMainWindow):
     def make_mainLayout(self):
         # Title component of menu
         menuTitle = QLabel()
+        # Color + Title        
         menuTitle.setText("  Scan Statistical Table  ")
         menuTitle.setFont(QFont("Times", 18))
         menuTitle.setStyleSheet("border: 2px solid black; color: #000000")
