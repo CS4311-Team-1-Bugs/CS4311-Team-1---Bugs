@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Thu Feb 25 00:15:23 2021
 
@@ -37,23 +36,31 @@ class ToolContent(QWidget):
         # Create Tool Content Details layer
         toolContentLayout = QVBoxLayout()
         tableWidget =  QTableWidget(4,3)
-        nameSortButton = QToolButton()                                     
+        tableWidget.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+                                    
                               
-        nameSortButton.setArrowType(Qt.DownArrow)
-        tableWidget.setCellWidget(0,0,nameSortButton)
+
+
         tableWidget.setHorizontalHeaderLabels(("Tool Name; Description of tool; ").split(";"))
         tableWidget.setVerticalHeaderLabels(("; ; ; ;").split(";"))
         
-        # Add  buttons to the table
+        # Create and add  buttons to the table
+
         for i in range(1,4):
                     tableWidget.setCellWidget(i,2, QPushButton("Remove"))
+                
+        nameSortButton = QToolButton()
+        nameSortButton.setArrowType(Qt.DownArrow)
+        tableWidget.setCellWidget(0,0,nameSortButton)
 
-        toolContentLayout.insertWidget(0,tableWidget,1)
         
         # Handle buttons associated with the table
         toolTableButtonLayout = QHBoxLayout()
         toolTableButtonLayout.addStretch(1)
         toolTableButtonLayout.addWidget(QPushButton("Add Tool"))
+        
+        # Set up the table area layout
+        toolContentLayout.insertWidget(0,tableWidget,-2,)
         toolContentLayout.addLayout(toolTableButtonLayout)
 
 
