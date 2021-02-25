@@ -5,6 +5,7 @@ import sys
 from PyQt5 import *
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import *
+from PyQt5.QtGui import QPalette, QColor, QFont
 from PyQt5.QtWidgets import *
 
 
@@ -16,13 +17,18 @@ class MainWindow(QMainWindow):
 
         # Set the Window Title
         self.setWindowTitle("SEA Tool")
-
-        # Make a Widget to hold the layout and set it as the window's menu
+        self.setStyleSheet('background-color:000000;color:ffffff')
+        # Make our menu
         menuWidget = QWidget()
         menuLayout = self.make_menuLayout()
         menuWidget.setLayout(menuLayout)
+        palette = QPalette()
+        palette.setColor(QtGui.QPalette.Background, QColor("#99ccff"))
+        menuWidget.setPalette(palette)
+        menuWidget.setAutoFillBackground(1)
         self.setMenuWidget(menuWidget)
 
+        # Make our main area
         mainWidget = QWidget()
         mainLayout = self.make_mainLayout()
         mainWidget.setLayout(mainLayout)
@@ -34,7 +40,9 @@ class MainWindow(QMainWindow):
 
         # Title component of menu
         menuTitle = QLabel()
-        menuTitle.setText("SEA Menu")
+        menuTitle.setText("  SEA Menu  ")
+        menuTitle.setFont(QFont("Times", 20))
+        menuTitle.setStyleSheet("border: 3px solid black; color: #000000")
         menuTitle.setAlignment(Qt.AlignCenter)
 
         # button component of menu
@@ -48,20 +56,30 @@ class MainWindow(QMainWindow):
         hLayout.addStretch()
 
         # Add the widgets we created to the menu layout
-        menuLayout.addWidget(menuTitle)
+        menuLayout.addWidget(self.make_HBox(menuTitle, 0))
         hButtons = QWidget()
         hButtons.setLayout(hLayout)
         menuLayout.addWidget(hButtons)
+
         return menuLayout
 
     def make_mainLayout(self):
+        # Title component of menu
+        menuTitle = QLabel()
+        menuTitle.setText("  Scan Statistical Table  ")
+        menuTitle.setFont(QFont("Times", 18))
+        menuTitle.setStyleSheet("border: 2px solid black; color: #000000")
+        menuTitle.setAlignment(Qt.AlignCenter)
+
+        # make our run list
         scanList = self.make_scanList()
 
+        # Add spacing to the page and add our widgets
         mainLayout = QVBoxLayout()
-        mainLayout.addStretch()
+        mainLayout.addWidget(self.make_HBox(menuTitle, 0))
         mainLayout.addWidget(self.make_HBox(scanList, 1))
-        mainLayout.addStretch()
         mainLayout.addWidget(self.make_HBox(QPushButton("Add"), 0))
+        mainLayout.addStretch()
         return mainLayout
 
     def make_scanList(self):
