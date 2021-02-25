@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtCore import left, Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QMainWindow, QComboBox, QLineEdit, QPushButton, QHBoxLayout, \
     QVBoxLayout, QFormLayout
 class RunConfigWindow(QWidget):
@@ -38,17 +38,28 @@ class RunConfigWindow(QWidget):
 
         # Create Run Config Details layer
         runConfigLayout = QFormLayout()
-        runConfigLayout.addRow("Run Name:", QLineEdit())
-        runConfigLayout.addRow("Run Description:", QLineEdit())
-        runConfigLayout.addRow("Whitelisted IP Target:", QLineEdit())
-        runConfigLayout.addRow("Blacklisted IP Target:", QLineEdit())
+        runName = QLineEdit()
+        runName.setAlignment(Qt.AlignLeft)
+        runName.setPlaceholderText("Run Name Default")
+        runConfigLayout.addRow("Run Name:", runName)
+        runDesc= QLineEdit()
+        runDesc.setPlaceholderText("Run Description Default")
+        runConfigLayout.addRow("Run Description:", runDesc)
+        WLIPtext = QLineEdit()
+        WLIPtext.setPlaceholderText("Whitelist IP Default")
+        runConfigLayout.addRow("Whitelisted IP Target:", WLIPtext)
+        BLIPtext = QLineEdit()
+        BLIPtext.setPlaceholderText("Blacklist IP Default")
+        runConfigLayout.addRow("Blacklisted IP Target:", BLIPtext)
         ScanType = QComboBox()
-        scanList = [ "Scan Type", "Scan Type 1", "Scan Type 2 ", "Scan Type 3" ]
+        scanList = ["Scan Type", "Scan Type 1", "Scan Type 2 ", "Scan Type 3"]
         ScanType.addItems(scanList)
         runConfigLayout.addRow("Scan Type:", ScanType)
         runConfigLayout.addRow("OR", QLabel())
         buttonConfigFile = QPushButton("Browse ...")
-        runConfigLayout.addRow("Run Configuration File", QLineEdit())
+        ConfigFile = QLineEdit()
+        ConfigFile.setPlaceholderText("Run Configuration File")
+        runConfigLayout.addRow("Run Configuration File", ConfigFile)
         runConfigLayout.addWidget(buttonConfigFile)
 
         # set button layout
