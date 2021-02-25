@@ -3,7 +3,7 @@
 
 import sys
 from PyQt5 import *
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
@@ -17,6 +17,18 @@ class MainWindow(QMainWindow):
         # Set the Window Title
         self.setWindowTitle("SEA Tool")
 
+        # Make a Widget to hold the layout and set it as the window's menu
+        menuWidget = QWidget()
+        menuLayout = self.make_menuLayout()
+        menuWidget.setLayout(menuLayout)
+        self.setMenuWidget(menuWidget)
+
+        mainWidget = QWidget()
+        mainLayout = self.make_mainLayout()
+        mainWidget.setLayout(mainLayout)
+        self.setCentralWidget(mainWidget)
+
+    def make_menuLayout(self):
         # set menu layout
         menuLayout = QVBoxLayout()
 
@@ -40,19 +52,23 @@ class MainWindow(QMainWindow):
         hButtons = QWidget()
         hButtons.setLayout(hLayout)
         menuLayout.addWidget(hButtons)
+        return menuLayout
 
-        ############################################## END OF HOME MENU ###############################################
+    def make_mainLayout(self):
+        runList = self.make_runList()
 
-        # Make a Widget to hold the layout and set it as the window's menu
-        menuWidget = QWidget()
-        menuWidget.setLayout(menuLayout)
-        self.setMenuWidget(menuWidget)
+        mainLayout = QVBoxLayout()
+        mainLayout.addStretch()
+        mainLayout.addWidget(self.make_HBox(runList, 1))
+        mainLayout.addStretch()
+        mainLayout.addWidget(self.make_HBox(QPushButton("Add"), 0))
+        return mainLayout
+
+    def make_runList(self):
 
         runList = QTableWidget()
         runList.setRowCount(6)
         runList.setColumnCount(8)
-
-
 
         # Initializes Start/Pause/Stop Buttons row 1
         startButton1 = QPushButton()
@@ -223,15 +239,31 @@ class MainWindow(QMainWindow):
         runList.setItem(6, 5, QTableWidgetItem("12:34:12"))
         runList.setItem(6, 6, QTableWidgetItem("127.0.0.0–127.255.255.255"))
         runList.setItem(6, 7, QTableWidgetItem("Successful"))
-
         runList.horizontalHeader().hide()
         runList.verticalHeader().hide()
-        runList.resizeColumnsToContents()
+        # runList.resizeColumnsToContents()
+        header = runList.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
 
-        self.setCentralWidget(runList)
+        return runList
 
-    # def addRow(runList):
-    # runList.getRowCount()
+    def make_HBox(self, widget, spacingType):
+        layout = QHBoxLayout()
+        if spacingType:
+            layout.addSpacing(2)
+        else:
+            layout.addStretch()
+        layout.addWidget(widget)
+        if spacingType:
+            layout.addSpacing(2)
+        else:
+            layout.addStretch()
+        container = QWidget()
+        container.setLayout(layout)
+        return container
 
 
 if __name__ == "__main__":
