@@ -5,7 +5,7 @@ import pymongo
 
 
 
-client = pymongo.MongoClient("mongodb+srv://aaron:EDVsK1hnYHJEWZry@seacluster.f3vdv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+client = pymongo.MongoClient("mongodb+srv://USER:PASSWORD@seacluster.f3vdv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 db = client['Test']
 
 
