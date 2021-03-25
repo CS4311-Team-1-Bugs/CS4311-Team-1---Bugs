@@ -17,9 +17,8 @@ class QTablePush(QPushButton):
         self.setIcon(QIcon(QPixmap(text)))
         self.setIconSize(QSize(16,16))
         self.id = str(id)
-        print(id)
         self.setToolTip(text[:-4])
-        self.clicked.connect(lambda: win.tool_buttons("RemoveT", self))
+        self.clicked.connect(lambda: win.tool_buttons(text[:-4], self))
     
 class MainWindow(QMainWindow):
     
@@ -48,7 +47,8 @@ class MainWindow(QMainWindow):
         self.make_toolTable()
         self.make_toolConfig()
         self.run_config()
-
+        self.editMode = 0
+        self.currId = 0
     def make_menuLayout(self):
         # set menu layout
         menuLayout = QVBoxLayout()
@@ -83,11 +83,11 @@ class MainWindow(QMainWindow):
     def make_toolConfig(self):
 
         # Title component of menu
-        mainTitle = QLabel()
-        mainTitle.setText("  Add a Tool  ")
-        mainTitle.setFont(QFont("Times", 16))
-        mainTitle.setStyleSheet("background-color: #49d1e3")
-        mainTitle.setAlignment(Qt.AlignLeft)
+        self.AddTitle = QLabel()
+        self.AddTitle.setText("  Add a Tool  ")
+        self.AddTitle.setFont(QFont("Times", 16))
+        self.AddTitle.setStyleSheet("background-color: #49d1e3")
+        self.AddTitle.setAlignment(Qt.AlignLeft)
 
         # Title component of menu
         specTitle = QLabel()
@@ -127,7 +127,7 @@ class MainWindow(QMainWindow):
         self.newTool = 1
 
         self.toolEdit = QDockWidget()
-        self.toolEdit.setTitleBarWidget(mainTitle)
+        self.toolEdit.setTitleBarWidget(self.AddTitle)
         self.toolEdit.setWidget(main)
         self.addDockWidget(Qt.RightDockWidgetArea, self.toolEdit)
 
@@ -433,28 +433,54 @@ class MainWindow(QMainWindow):
             self.name.setText("")
             self.description.setText("")
             self.path.setText("")
-            self.option.setText("")
+            #self.option.setText("")
             self.specFile.setText("")
             for i in reversed(range(self.options.count())):
-                if i != 0:
+                if i == 0:
                     self.options.itemAt(i).widget().layout().itemAt(0).widget().setText("")
                 else:
                     self.options.itemAt(i).widget().setParent(None)
             for i in reversed(range(self.outputSpec.count())):
-                if i != 0:
+                if i == 0:
                     self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().setText("")
                 else:
                     self.outputSpec.itemAt(i).widget().setParent(None)
+            if self.editMode == 1:
+                self.editMode = 0
+                self.AddTitle.setText("Add a Tool")
         elif buttonName == "Save":
             name = self.name.text()
             description = self.description.text()
             path = self.path.text()
             spec = self.specFile.text()
-            inputStr = {"Name": name, "Description": description, "Path": path, "Options": "{1}", "Output": "{222}",
-                        "Specification": spec}
-            self.tools.insert_one(inputStr)
+            if not self.editMode:
+               
+                inputStr = {"Name": name, "Description": description, "Path": path, "Options": "{1}", "Output": "{222}",
+                            "Specification": spec}
+                self.tools.insert_one(inputStr)
+                
+            else:
+                self.editMode = 0
+                self.AddTitle.setText("  Add a Tool  ")
+                self.tools.update_one({"_id": self.currId}, { "$set": {"Name": name, "Description": description, "Path": path, "Specification": spec}})
+            
+            #Redraw the table and erase the text boxes
             self.drawTable()
             self.tool_buttons("Cancel", None)
+                
+                
+        elif buttonName == "Edit":
+            Id = ObjectId(button.id)
+            self.currId = Id
+            self.editMode = 1
+            query = {"_id": Id}
+            tool = self.tools.find(query)[0]
+            self.name.setText(tool["Name"])
+            self.description.setText(tool["Description"])
+            self.path.setText(tool["Path"])
+            self.specFile.setText(tool["Specification"])
+            self.AddTitle.setText("  Edit a Tool  ")
+            
 
     def drawTable(self):
         table = self.tableWidget
@@ -470,9 +496,7 @@ class MainWindow(QMainWindow):
             Buttons = QWidget()
             ButtonLayout = QHBoxLayout()
             edit = QTablePush(i["_id"], "Edit.png")
-            edit.clicked.connect(lambda: self.tool_buttons("Editor", edit))
-            remove = QTablePush(i["_id"],"Remove.png")
-            remove.clicked.connect(lambda: self.tool_buttons("RemoveT", remove))
+            remove = QTablePush(i["_id"],"RemoveT.png")
             ButtonLayout.addWidget(edit)
             ButtonLayout.addWidget(remove)
             Buttons.setLayout(ButtonLayout)
