@@ -421,7 +421,6 @@ class MainWindow(QMainWindow):
             self.description.setText("")
             self.path.setText("")
             self.option.setText("")
-            self.outputSpec.find()
             self.specFile.setText("")
             for i in reversed(range(self.options.count())):
                 if i != 0:
