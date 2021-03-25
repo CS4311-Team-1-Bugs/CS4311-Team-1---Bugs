@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
         db = client['Test']
 
         self.tools = db["Tools"]
-        self.optionsDB = db["Options"]
+        self.optionsDB = db["options"]
         self.outputSpec = db["Output"]
 
         # Set the Window Title
@@ -334,6 +334,7 @@ class MainWindow(QMainWindow):
         addLayout.addStretch(1)
         push = QPushButton("Add Tool")
         push.setStyleSheet("background-color: #54e86c")
+        push.clicked.connect(lambda: self.tool_buttons("Switcher", None))
         addLayout.addWidget(push)
         holder = QWidget()
         holder.setLayout(addLayout)
@@ -404,8 +405,8 @@ class MainWindow(QMainWindow):
                     if i == 0:
                         continue
                         # print(i)
-                    # print(self.options.itemAt(i).widget().layout().itemAt(0).widget().text())
-                    # print("button text is", button)
+                    print(self.options.itemAt(i).widget().layout().itemAt(0).widget().text())
+                    print("button text is", button)
                     if self.options.itemAt(i).widget().layout().itemAt(0).widget().text() == button:
                         # print("match at ", i)
                         self.options.itemAt(i).widget().setParent(None)
@@ -427,6 +428,9 @@ class MainWindow(QMainWindow):
                         self.tableWidget.removeRow(i)
                         removeDict = {"_id": ObjectId(button.id)}
                         self.tools.delete_one(removeDict)
+                        
+                        removeOpts = {"Tool_id": ObjectId(button.id)}
+                        self.optionsDB.delete_many(removeOpts)
                         return
 
         elif buttonName == "Cancel":
@@ -454,19 +458,37 @@ class MainWindow(QMainWindow):
             path = self.path.text()
             spec = self.specFile.text()
             if not self.editMode:
-               
                 inputStr = {"Name": name, "Description": description, "Path": path, "Options": "{1}", "Output": "{222}",
                             "Specification": spec}
                 self.tools.insert_one(inputStr)
-                
+               
+                #inserting all the options
+                tool_id = self.tools.find(inputStr)[0]["_id"]
+                for i in reversed(range(self.options.count())):
+                    option = self.options.itemAt(i).widget().layout().itemAt(0).widget().text()
+                    inputter = {"Tool_id": tool_id, "Option": option}
+                    self.optionsDB.insert_one(inputter)
             else:
                 self.editMode = 0
                 self.AddTitle.setText("  Add a Tool  ")
                 self.tools.update_one({"_id": self.currId}, { "$set": {"Name": name, "Description": description, "Path": path, "Specification": spec}})
+                
+                
+                #options update
+                self.optionsDB.delete_many({"Tool_id": self.currId})
+                for i in reversed(range(self.options.count())):
+                    option = self.options.itemAt(i).widget().layout().itemAt(0).widget().text()
+                    inputter = {"Tool_id": self.currId, "Option": option}
+                    self.optionsDB.insert_one(inputter)
             
             #Redraw the table and erase the text boxes
             self.drawTable()
             self.tool_buttons("Cancel", None)
+        elif buttonName == "Switcher":
+            self.editMode = 0
+            self.AddTitle.setText("  Add a Tool  ")
+            self.tool_buttons("Cancel", None)
+            
                 
                 
         elif buttonName == "Edit":
@@ -480,6 +502,25 @@ class MainWindow(QMainWindow):
             self.path.setText(tool["Path"])
             self.specFile.setText(tool["Specification"])
             self.AddTitle.setText("  Edit a Tool  ")
+            
+            opt_query = {"Tool_id": Id}
+            for i in self.optionsDB.find(opt_query):
+                label = i["Option"]
+                # make layout to hold name and button
+                hLayout = QHBoxLayout()
+                addedLabel = QLabel(label)
+                removeButt = QPushButton("Remove")
+                hLayout.addWidget(addedLabel)
+                hLayout.addWidget(removeButt)
+
+                # make a holder
+                holder = QWidget()
+                holder.setLayout(hLayout)
+           
+                self.options.addWidget(holder)
+                # set up removal button's button
+                removeButt.clicked.connect(lambda checked,  a = label: self.tool_buttons("Remove", a))
+            
             
 
     def drawTable(self):
