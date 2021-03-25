@@ -6,8 +6,21 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import pymongo
+from bson.objectid import ObjectId
 
 
+class QTablePush(QPushButton):
+     global win
+     def __init__(self, id, text):
+        #init the window
+        super(QPushButton, self).__init__()
+        self.setIcon(QIcon(QPixmap(text)))
+        self.setIconSize(QSize(16,16))
+        self.id = str(id)
+        print(id)
+        self.setToolTip(text[:-4])
+        self.clicked.connect(lambda: win.tool_buttons("RemoveT", self))
+    
 class MainWindow(QMainWindow):
     
     def __init__(self, *args, **kwargs):
@@ -307,7 +320,7 @@ class MainWindow(QMainWindow):
         col1Widget.setLayout(col1Layout)
         self.tableWidget.setCellWidget(0, 0, col1Widget)
         self.tableWidget.setCellWidget(0, 1, QLabel("Description of Tool"))
-        self.tableWidget.setCellWidget(0, 2, QLabel("Modify"))
+        self.tableWidget.setCellWidget(0, 2, QLabel("  Modify"))
         header = self.tableWidget.horizontalHeader()
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
@@ -403,16 +416,13 @@ class MainWindow(QMainWindow):
                         self.outputSpec.itemAt(i).widget().setParent(None)
                         return
             else:
-
-                for i in range(self.tableWidget.rowCount()):
-                    if i == 0:
-                        continue
-                    print("target", button)
-                    print("actual", self.tableWidget.cellWidget(i, 3).text())
-                    if self.tableWidget.cellWidget(i, 3).text() == button:
-                        print("Going to remove row", i)
+                for i in range(1, self.tableWidget.rowCount()):
+                    #print("target", button.id)
+                    #print("actual", self.tableWidget.cellWidget(i, 3).text())
+                    if self.tableWidget.cellWidget(i, 3).text() == button.id:
+                        #print("Going to remove row", i)
                         self.tableWidget.removeRow(i)
-                        removeDict = {"_id": button}
+                        removeDict = {"_id": ObjectId(button.id)}
                         self.tools.delete_one(removeDict)
                         return
 
@@ -453,15 +463,33 @@ class MainWindow(QMainWindow):
                 table.insertRow(index)
             table.setCellWidget(index, 0, QLabel(i[ "Name" ]))
             table.setCellWidget(index, 1, QLabel(i[ "Description" ]))
-            table.setCellWidget(index, 2, QPushButton("Remove"))
+            
+            Buttons = QWidget()
+            ButtonLayout = QHBoxLayout()
+            edit = QTablePush(i["_id"], "Edit.png")
+            edit.clicked.connect(lambda: self.tool_buttons("Editor", edit))
+            remove = QTablePush(i["_id"],"Remove.png")
+            remove.clicked.connect(lambda: self.tool_buttons("RemoveT", remove))
+            ButtonLayout.addWidget(edit)
+            ButtonLayout.addWidget(remove)
+            Buttons.setLayout(ButtonLayout)
+            table.setCellWidget(index, 2, Buttons)
+            #table.setCellWidget(index, 2, QPushButton("Remove"))
             table.setCellWidget(index, 3, QLabel(str(i[ "_id" ])))
             index += 1
+            
         for i in range(1, self.tableWidget.rowCount()):
-            string = table.cellWidget(i, 3).text()
-            table.cellWidget(i, 2).clicked.connect(lambda: self.tool_buttons("RemoveT", string))
+            self.tableWidget.verticalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
+            #string = table.cellWidget(i, 3).text()
+            #table.cellWidget(i, 2).clicked.connect(lambda: self.tool_buttons("RemoveT", string))
+            
 
 if __name__ == "__main__":
+        global win
         app = QApplication(sys.argv)
         win = MainWindow()
         win.show()
         sys.exit(app.exec())
+        
+        #tacos = QTablePush(7)
+        #print(tacos.id)
