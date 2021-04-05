@@ -1,13 +1,20 @@
 import sys
 import datetime
+from pymongo import MongoClient
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QMainWindow, QComboBox, QLineEdit, QPushButton, QHBoxLayout, \
-    QVBoxLayout, QFormLayout
+    QVBoxLayout, QFormLayout, QFileDialog
+
+
 class RunConfigWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         # init the window
         super(RunConfigWindow, self).__init__(*args, **kwargs)
+        client = MongoClient(
+            "mongodb+srv://carlos:dp5lEq2yGiWFmaFV@seacluster.f3vdv.mongodb.net/myFirstDatabase?retryWrites=true&w=1")
+        db = client[ 'Run' ]
+        self.run = db["Run"]
 
         # Set the Window Title
         self.setWindowTitle("Configuration of the Selected Run")
@@ -35,7 +42,9 @@ class RunConfigWindow(QMainWindow):
         # button component of menu
         hLayout = QHBoxLayout()
         runButton = QPushButton("Run")
+        #runButton.clicked.connect()
         toolButton = QPushButton("Tools")
+        #toolButton.clicked.connect()
         hLayout.addStretch()
         hLayout.addWidget(runButton)
         hLayout.addStretch()
@@ -69,21 +78,25 @@ class RunConfigWindow(QMainWindow):
         runDesc.setPlaceholderText("Run Description Default")
         runConfigLayout.addRow("Run Description:", runDesc)
         buttonConfigFile = QPushButton("Browse")
-        buttonConfigFile.setStyleSheet("background-color:rgb(144,184,239)")
         WLIPtext = QLineEdit()
         WLIPtextfile = QLineEdit()
         WLIPtext.setPlaceholderText("Whitelist IP Default")
         runConfigLayout.addRow("Whitelisted IP Target:", WLIPtext)
+        buttonConfigFile.clicked.connect(lambda: self.browseFunc())
         runConfigLayout.addWidget(orLabel)
         runConfigLayout.addRow("Browse for Whitelist File:", WLIPtextfile)
-        runConfigLayout.addWidget(QPushButton("Browse"))
+        browse1 = QPushButton("Browse")
+        runConfigLayout.addWidget(browse1)
+        browse1.clicked.connect(lambda : self.browseFunc())
         BLIPtext = QLineEdit()
         BLIPtextfile = QLineEdit()
         BLIPtext.setPlaceholderText("Blacklist IP Default")
         runConfigLayout.addRow("Blacklisted IP Target:", BLIPtext)
         runConfigLayout.addWidget(orLabel1)
         runConfigLayout.addRow("Browse for Blacklist File:", BLIPtextfile )
-        runConfigLayout.addWidget(QPushButton("Browse"))
+        browse2 = QPushButton("Browse")
+        runConfigLayout.addWidget(browse2)
+        browse2.clicked.connect(lambda: self.browseFunc())
         ScanType = QComboBox()
         scanList = ["Scan Type", "Scan Type 1", "Scan Type 2 ", "Scan Type 3"]
         ScanType.addItems(scanList)
@@ -125,6 +138,8 @@ class RunConfigWindow(QMainWindow):
         orLabel.setFont(serifFont)
         return orLabel
 
+    def browseFunc(self):
+        fname = QFileDialog.getOpenFileName(None,"Select a file...","./",filter="All files (*)")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
