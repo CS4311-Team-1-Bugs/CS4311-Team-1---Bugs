@@ -227,12 +227,7 @@ class MainWindow(QMainWindow):
         operatorOption = ["N/A","<",">","<=",">=","==","~="]
         logicalOption = ["N/A","AND","OR","NOT"]
         options2.addItems(operatorOption)
-        option3 = QComboBox()
-        option4 = QComboBox()
         hButton.addWidget(options2)
-        hButton.addWidget(option3)
-        hButton.addWidget(option4)
-        option3.addItems(logicalOption)
         option4.addItems(operatorOption)
         hButton.addWidget(QLabel("Value"))
         hButton.addWidget(QLineEdit())
