@@ -30,8 +30,8 @@ class MainWindow(QMainWindow):
         db = client['Test']
 
         self.tools = db["Tools"]
-        self.optionsDB = db["options"]
-        self.outputSpec = db["Output"]
+        self.optionsDB = db["Options"]
+        self.outputDB = db["Output"]
 
         # Set the Window Title
         self.setWindowTitle("SEA Tool")
@@ -496,8 +496,6 @@ class MainWindow(QMainWindow):
             self.name.setText("")
             self.description.setText("")
             self.path.setText("")
-            #self.option.setText("")
-            self.specFile.setText("")
             for i in reversed(range(self.options.count())):
                 if i == 0:
                     self.options.itemAt(i).widget().layout().itemAt(0).widget().setText("")
@@ -515,30 +513,56 @@ class MainWindow(QMainWindow):
             name = self.name.text()
             description = self.description.text()
             path = self.path.text()
-            spec = self.specFile.text()
             if not self.editMode:
-                inputStr = {"Name": name, "Description": description, "Path": path, "Options": "{1}", "Output": "{222}",
-                            "Specification": spec}
+                inputStr = {"Name": name, "Description": description, "Path": path}
                 self.tools.insert_one(inputStr)
                
-                #inserting all the options
+                #tool id for options and output specifications
                 tool_id = self.tools.find(inputStr)[0]["_id"]
+                
+                #for options
                 for i in reversed(range(self.options.count())):
-                    option = self.options.itemAt(i).widget().layout().itemAt(0).widget().text()
-                    inputter = {"Tool_id": tool_id, "Option": option}
-                    self.optionsDB.insert_one(inputter)
+                    if i == 0: 
+                        pass
+                    else:
+                        option = self.options.itemAt(i).widget().layout().itemAt(0).widget().text()
+                        inputter = {"Tool_id": tool_id, "Option": option}
+                        self.optionsDB.insert_one(inputter)
+                        
+                        
+                #for output Specification
+                for i in reversed(range(self.outputSpec.count())):
+                    if i == 0: 
+                        pass
+                    else:
+                        outputSpec = self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().text()
+                        inputter = {"Tool_id": tool_id, "OutputSpec": outputSpec}
+                        self.outputDB.insert_one(inputter)
+                        
             else:
                 self.editMode = 0
                 self.AddTitle.setText("  Add a Tool  ")
-                self.tools.update_one({"_id": self.currId}, { "$set": {"Name": name, "Description": description, "Path": path, "Specification": spec}})
-                
-                
+                self.tools.update_one({"_id": self.currId}, { "$set": {"Name": name, "Description": description, "Path": path}})
                 #options update
                 self.optionsDB.delete_many({"Tool_id": self.currId})
+                self.outputDB.delete_many({"Tool_id": self.currId})
                 for i in reversed(range(self.options.count())):
-                    option = self.options.itemAt(i).widget().layout().itemAt(0).widget().text()
-                    inputter = {"Tool_id": self.currId, "Option": option}
-                    self.optionsDB.insert_one(inputter)
+                    if i == 0:
+                        pass
+                    else:
+                        option = self.options.itemAt(i).widget().layout().itemAt(0).widget().text()
+                        inputter = {"Tool_id": self.currId, "Option": option}
+                        self.optionsDB.insert_one(inputter)
+                        
+                        
+                 #for output Specification
+                for i in reversed(range(self.outputSpec.count())):
+                    if i == 0: 
+                        pass
+                    else:
+                        outputSpec = self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().text()
+                        inputter = {"Tool_id": self.currId, "OutputSpec": outputSpec}
+                        self.outputDB.insert_one(inputter)
             
             #Redraw the table and erase the text boxes
             self.drawTable()
@@ -566,7 +590,6 @@ class MainWindow(QMainWindow):
             self.name.setText(tool["Name"])
             self.description.setText(tool["Description"])
             self.path.setText(tool["Path"])
-            self.specFile.setText(tool["Specification"])
             self.AddTitle.setText("  Edit a Tool  ")
             
             opt_query = {"Tool_id": Id}
@@ -586,6 +609,28 @@ class MainWindow(QMainWindow):
                 self.options.addWidget(holder)
                 # set up removal button's button
                 removeButt.clicked.connect(lambda checked,  a = label: self.tool_buttons("Remove", a))
+                
+                
+            for i in self.outputDB.find(opt_query):
+                label = i["OutputSpec"]
+                # make layout to hold name and button
+                hLayout = QHBoxLayout()
+                addedLabel = QLabel(label)
+                removeButt = QPushButton("Remove")
+                hLayout.addWidget(addedLabel)
+                hLayout.addWidget(removeButt)
+
+                # make a holder
+                holder = QWidget()
+                holder.setLayout(hLayout)
+           
+                self.outputSpec.addWidget(holder)
+                # set up removal button's button
+                removeButt.clicked.connect(lambda checked,  a = label: self.tool_buttons("RemoveS", a))
+                
+                
+                
+        
         #elif buttonName == "Import": 
             #file = open()
             
