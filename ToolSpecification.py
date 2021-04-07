@@ -205,6 +205,10 @@ class MainWindow(QMainWindow):
         layout.addRow(QLabel("Tool Name"), self.name)
         layout.addRow(QLabel("Tool Description"), self.description)
         layout.addRow(QLabel("Tool Path"), browserWidg)
+        #used for exporting all tool data
+        exportTool=QPushButton("Export")
+        exportTool.clicked.connect(lambda:self.tool_buttons("Export", self.specFile))
+        specFile_container.addWidget(exportTool)
         layout.addRow(QLabel("Option and Argument"), opt_widg)
         layout.addRow(QLabel("Output Specification"), outSpec_widg)
         layout.addRow(orLabel)
@@ -228,6 +232,7 @@ class MainWindow(QMainWindow):
         logicalOption = ["N/A","AND","OR","NOT"]
         options2.addItems(operatorOption)
         hButton.addWidget(options2)
+
         hButton.addWidget(QLabel("Value"))
         hButton.addWidget(QLineEdit())
         hButton.addWidget(QPushButton("Remove"))
@@ -302,8 +307,10 @@ class MainWindow(QMainWindow):
         # column 1
         col1Title = QLabel()
         col1Title.setText("Tool Name")
+        self.sortArrow = "down"
         nameSortButton = QToolButton()
         nameSortButton.setArrowType(Qt.DownArrow)
+        nameSortButton.clicked.connect(lambda: self.tool_buttons("Sort", nameSortButton))
         col1Layout = QHBoxLayout()
         col1Layout.addStretch()
         col1Layout.addWidget(col1Title)
@@ -395,37 +402,42 @@ class MainWindow(QMainWindow):
 
         elif "Remove" in buttonName:
             if buttonName == "Remove":
-                for i in range(self.options.count()):
-                    if i == 0:
-                        continue
-                        # print(i)
-                    print(self.options.itemAt(i).widget().layout().itemAt(0).widget().text())
-                    print("button text is", button)
-                    if self.options.itemAt(i).widget().layout().itemAt(0).widget().text() == button:
-                        # print("match at ", i)
-                        self.options.itemAt(i).widget().setParent(None)
-                        return
+                ret = self.remove_dialogs("Option Removal", "Remove {} from the options?".format(button))
+                if ret == QMessageBox.Yes:
+                    for i in range(self.options.count()):
+                        if i == 0:
+                            continue
+                            # print(i)
+                        if self.options.itemAt(i).widget().layout().itemAt(0).widget().text() == button:
+                            # print("match at ", i)
+                            self.options.itemAt(i).widget().setParent(None)
+                            return
 
             elif buttonName == "RemoveS":
-                for i in range(self.outputSpec.count()):
-                    if i == 0:
-                        continue
-                    if self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().text() == button:
-                        self.outputSpec.itemAt(i).widget().setParent(None)
-                        return
+                ret = self.remove_dialogs("Output Specification Removal", "Remove {} from the output specification? ".format(button))
+                if ret == QMessageBox.Yes:
+                    for i in range(self.outputSpec.count()):
+                        if i == 0:
+                            continue
+                        if self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().text() == button:
+                            self.outputSpec.itemAt(i).widget().setParent(None)
+                            return
             else:
-                for i in range(1, self.tableWidget.rowCount()):
-                    #print("target", button.id)
-                    #print("actual", self.tableWidget.cellWidget(i, 3).text())
-                    if self.tableWidget.cellWidget(i, 3).text() == button.id:
-                        #print("Going to remove row", i)
-                        self.tableWidget.removeRow(i)
-                        removeDict = {"_id": ObjectId(button.id)}
-                        self.tools.delete_one(removeDict)
-                        
-                        removeOpts = {"Tool_id": ObjectId(button.id)}
-                        self.optionsDB.delete_many(removeOpts)
-                        return
+                ret = self.remove_dialogs("Tool Removal", "Remove the Selected Tool?")
+
+                if ret == QMessageBox.Yes:
+                    for i in range(1, self.tableWidget.rowCount()):
+                        #print("target", button.id)
+                        #print("actual", self.tableWidget.cellWidget(i, 3).text())
+                        if self.tableWidget.cellWidget(i, 3).text() == button.id:
+                            #print("Going to remove row", i)
+                            self.tableWidget.removeRow(i)
+                            removeDict = {"_id": ObjectId(button.id)}
+                            self.tools.delete_one(removeDict)
+                            
+                            removeOpts = {"Tool_id": ObjectId(button.id)}
+                            self.optionsDB.delete_many(removeOpts)
+                            return
 
         elif buttonName == "Cancel":
             self.name.setText("")
@@ -482,8 +494,15 @@ class MainWindow(QMainWindow):
             self.editMode = 0
             self.AddTitle.setText("  Add a Tool  ")
             self.tool_buttons("Cancel", None)
-            
-                
+        elif buttonName == "Sort":
+            if self.sortArrow == "down":
+                button.setArrowType(Qt.UpArrow)
+                self.drawTable(1)
+                self.sortArrow = "up"
+            else:
+                button.setArrowType(Qt.DownArrow)
+                self.drawTable()
+                self.sortArrow = "down"
                 
         elif buttonName == "Edit":
             Id = ObjectId(button.id)
@@ -517,27 +536,33 @@ class MainWindow(QMainWindow):
             
             
 
-    def drawTable(self):
+    def drawTable(self, reversed = 0):
         table = self.tableWidget
         index = 1
-        for i in self.tools.find():
+        tools = self.tools.find()
+        maxInd = self.tools.count_documents({})
+        for i in range(1, maxInd):
+            if reversed: 
+                tool = tools[maxInd - i]
+            else:
+                tool = tools[i]
             if index < table.rowCount():
                 pass
             else:
                 table.insertRow(index)
-            table.setCellWidget(index, 0, QLabel(i[ "Name" ]))
-            table.setCellWidget(index, 1, QLabel(i[ "Description" ]))
+            table.setCellWidget(index, 0, QLabel(tool[ "Name" ]))
+            table.setCellWidget(index, 1, QLabel(tool[ "Description" ]))
             
             Buttons = QWidget()
             ButtonLayout = QHBoxLayout()
-            edit = QTablePush(i["_id"], "Edit.png")
-            remove = QTablePush(i["_id"],"RemoveT.png")
+            edit = QTablePush(tool["_id"], "Edit.png")
+            remove = QTablePush(tool["_id"],"RemoveT.png")
             ButtonLayout.addWidget(edit)
             ButtonLayout.addWidget(remove)
             Buttons.setLayout(ButtonLayout)
             table.setCellWidget(index, 2, Buttons)
             #table.setCellWidget(index, 2, QPushButton("Remove"))
-            table.setCellWidget(index, 3, QLabel(str(i[ "_id" ])))
+            table.setCellWidget(index, 3, QLabel(str(tool[ "_id" ])))
             index += 1
             
         for i in range(1, self.tableWidget.rowCount()):
@@ -634,6 +659,7 @@ class MainWindow(QMainWindow):
         
     
     def orLabel(self):
+        
         orLabel = QLabel()
         orLabel.setText("-OR-")
         orLabel.setAlignment(Qt.AlignCenter)
@@ -641,6 +667,9 @@ class MainWindow(QMainWindow):
         orLabel.setFont(serifFont)
         return orLabel
 
+    def remove_dialogs(self, windowTitle, text):
+        ret = QMessageBox.question(self, windowTitle, text, QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Cancel)
+        return ret
 if __name__ == "__main__":
         global win
         app = QApplication(sys.argv)
@@ -650,3 +679,4 @@ if __name__ == "__main__":
         
         #tacos = QTablePush(7)
         #print(tacos.id)
+
