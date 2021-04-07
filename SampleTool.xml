@@ -16,7 +16,7 @@
 	<Options></Options>
 	
 	<!--Semicolon-separated output specifications for the tool-->
-	<!-- Ex: <port>; <ports>;
+	<!-- Ex: <port>; <ports>; -->
 	<OutputSpec> </OutputSpec>
 	
 	<!--For every tool dependency-->
