@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import sys
 from PyQt5 import *
 from PyQt5.QtCore import *
@@ -9,78 +7,40 @@ import pymongo
 from bson.objectid import ObjectId
 import datetime
 import os
+import Utils as util
 
 class QTablePush(QPushButton):
-     global win
-     def __init__(self, id, text):
+     def __init__(self, id, text, toolSection):
         #init the window
         super(QPushButton, self).__init__()
         self.setIcon(QIcon(QPixmap(text)))
         self.setIconSize(QSize(16,16))
         self.id = str(id)
         self.setToolTip(text[:-4])
-        self.clicked.connect(lambda: win.tool_buttons(text[:-4], self))
+        self.section = toolSection
+        self.clicked.connect(lambda: self.section.buttons(text[:-4], self))
     
-class MainWindow(QMainWindow):
+class ToolSection():
     
-    def __init__(self, *args, **kwargs):
-        #init the window
-        super(MainWindow, self).__init__(*args, **kwargs)
+    def __init__(self, window):
+        #database setup
         client = pymongo.MongoClient("mongodb+srv://aaron:EDVsK1hnYHJEWZry@seacluster.f3vdv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
         db = client['Test']
-
         self.tools = db["Tools"]
         self.optionsDB = db["Options"]
         self.outputDB = db["Output"]
-
-        # Set the Window Title
-        self.setWindowTitle("SEA Tool")
-        self.setStyleSheet('background-color:000000;color:ffffff')
-        # Make our menu
-        menuWidget = QWidget()
-        menuLayout = self.make_menuLayout()
-        menuWidget.setLayout(menuLayout)
-        palette = QPalette()
-        palette.setColor(QPalette.Background, QColor("#daf4f7"))
-        menuWidget.setPalette(palette)
-        menuWidget.setAutoFillBackground(1)
-        self.setMenuWidget(menuWidget)
+    
+        #variable setup
+        self.win = window
+        self.editMode = 0
+        self.currId = 0
+        
+        #make all of our windows
         self.make_toolTable()
         self.make_toolImport()
         self.make_toolConfig()
-        self.run_config()
-        self.editMode = 0
-        self.currId = 0
-    def make_menuLayout(self):
-        # set menu layout
-        menuLayout = QVBoxLayout()
+        
 
-        # Title component of menu
-        menuTitle = QLabel()
-        menuTitle.setText("  SEA Menu  ")
-        menuTitle.setFont(QFont("Times", 20))
-        menuTitle.setStyleSheet("border: 3px solid black; color: #000000")
-        menuTitle.setAlignment(Qt.AlignCenter)
-
-        # button component of menu
-        hLayout = QHBoxLayout()
-        runButton = QPushButton("Run")
-        runButton.clicked.connect(lambda: self.menu_buttons("Run"))
-        toolButton = QPushButton("Tools")
-        toolButton.clicked.connect(lambda: self.menu_buttons("Tool"))
-        hLayout.addStretch()
-        hLayout.addWidget(runButton)
-        hLayout.addStretch()
-        hLayout.addWidget(toolButton)
-        hLayout.addStretch()
-
-        # Add the widgets we created to the menu layout
-        menuLayout.addWidget(self.make_HBox(menuTitle, 0))
-        hButtons = QWidget()
-        hButtons.setLayout(hLayout)
-        menuLayout.addWidget(hButtons)
-
-        return menuLayout
 
     def make_toolConfig(self):
 
@@ -112,26 +72,24 @@ class MainWindow(QMainWindow):
         toolDep = self.make_toolDep()
 
         # Save Button Section
-        saveButt = self.make_saveCancel(1)
+        saveButt = util.make_saveCancel(self, 1)
 
         # Add spacing to the page and add our widgets
         mainLayout = QVBoxLayout()
-        mainLayout.addWidget(self.make_HBox(specTitle, 0))
-        mainLayout.addWidget(self.make_HBox(toolSpec, 1))
-        mainLayout.addWidget(self.make_HBox(depTitle, 0))
-        mainLayout.addWidget(self.make_HBox(toolDep, 1))
+        mainLayout.addWidget(util.make_HBox(specTitle, 0))
+        mainLayout.addWidget(util.make_HBox(toolSpec, 1))
+        mainLayout.addWidget(util.make_HBox(depTitle, 0))
+        mainLayout.addWidget(util.make_HBox(toolDep, 1))
         mainLayout.addWidget(saveButt)
         mainLayout.addStretch()
 
         main = QWidget()
         main.setLayout(mainLayout)
 
-        self.newTool = 1
-
         self.toolEdit = QDockWidget()
         self.toolEdit.setTitleBarWidget(self.AddTitle)
         self.toolEdit.setWidget(main)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.toolEdit)
+        self.win.addDockWidget(Qt.RightDockWidgetArea, self.toolEdit)
 
     def make_toolSpec(self):
         layout = QFormLayout()
@@ -147,7 +105,7 @@ class MainWindow(QMainWindow):
         self.path.setAlignment(Qt.AlignLeft)
         browser.addWidget(self.path)
         pathBrowse = QPushButton("Browse")
-        pathBrowse.clicked.connect(lambda: self.tool_buttons("Browse", self.path))
+        pathBrowse.clicked.connect(lambda: self.buttons("Browse", self.path))
         browser.addWidget(pathBrowse)
         browser.addStretch()
 
@@ -157,11 +115,10 @@ class MainWindow(QMainWindow):
         opt_layout = QHBoxLayout()
         opt = QLineEdit()
         self.options = QVBoxLayout()
-        self.option = opt
         opt.setAlignment(Qt.AlignLeft)
         opt_layout.addWidget(opt)
         add_opt = QPushButton("Add")
-        add_opt.clicked.connect(lambda: self.tool_buttons("Add", opt))
+        add_opt.clicked.connect(lambda: self.buttons("Add", opt))
         opt_layout.addWidget(add_opt)
         opt_layout.addStretch()
 
@@ -180,7 +137,7 @@ class MainWindow(QMainWindow):
         outSpec.setAlignment(Qt.AlignLeft)
         outSpecLayout.addWidget(outSpec)
         addOutSpec = QPushButton("Add")
-        addOutSpec.clicked.connect(lambda: self.tool_buttons("AddS", outSpec),)
+        addOutSpec.clicked.connect(lambda: self.buttons("AddS", outSpec),)
         outSpecLayout.addWidget(addOutSpec)
         outSpecLayout.addStretch()
 
@@ -224,7 +181,7 @@ class MainWindow(QMainWindow):
         hButtonHolder.setLayout(hButton)
         add = QPushButton("ADD")
         layout.addWidget(hButtonHolder)
-        layout.addWidget(self.make_HBox(add, 0))
+        layout.addWidget(util.make_HBox(add, 0))
 
 
         depLayout = QHBoxLayout()
@@ -239,48 +196,6 @@ class MainWindow(QMainWindow):
         layoutHolder = QWidget()
         layoutHolder.setLayout(layout)
         return layoutHolder
-
-    def make_saveCancel(self, exportOption = 0):
-        layout = QHBoxLayout()
-        save = QPushButton("Save")
-        save.setStyleSheet("background-color: #54e86c")
-        save.clicked.connect(lambda: self.tool_buttons("Save", None))
-        cancel = QPushButton("Cancel")
-        cancel.setStyleSheet("background-color: #e6737e")
-        cancel.clicked.connect(lambda: self.tool_buttons("Cancel", None))
-        if exportOption:
-            export = QPushButton("Export Current Configuration to XML")
-            export.setStyleSheet("background-color: #49d1e3")
-            export.clicked.connect(lambda: self.tool_buttons("Export", None))
-            
-            
-        layout.addStretch()
-        
-        layout.addWidget(cancel)
-        if exportOption: 
-            layout.addWidget(export)
-        layout.addWidget(save)
-        layout.addStretch()
-
-        container = QWidget()
-        container.setLayout(layout)
-        return container
-        # pad a widget with horizontal spacing or stretching
-
-    def make_HBox(self, widget, spacingType):
-        layout = QHBoxLayout()
-        if spacingType == 1:
-            layout.addSpacing(2)
-        else:
-            layout.addStretch()
-        layout.addWidget(widget)
-        if spacingType == 1:
-            layout.addSpacing(2)
-        else:
-            layout.addStretch()
-        container = QWidget()
-        container.setLayout(layout)
-        return container
 
     def make_toolTable(self):
 
@@ -302,7 +217,7 @@ class MainWindow(QMainWindow):
         self.sortArrow = "down"
         nameSortButton = QToolButton()
         nameSortButton.setArrowType(Qt.DownArrow)
-        nameSortButton.clicked.connect(lambda: self.tool_buttons("Sort", nameSortButton))
+        nameSortButton.clicked.connect(lambda: self.buttons("Sort", nameSortButton))
         col1Layout = QHBoxLayout()
         col1Layout.addStretch()
         col1Layout.addWidget(col1Title)
@@ -327,7 +242,7 @@ class MainWindow(QMainWindow):
         addLayout.addStretch(1)
         push = QPushButton("Add Tool")
         push.setStyleSheet("background-color: #54e86c")
-        push.clicked.connect(lambda: self.tool_buttons("Switcher", None))
+        push.clicked.connect(lambda: self.buttons("Switcher", None))
         addLayout.addWidget(push)
         holder = QWidget()
         holder.setLayout(addLayout)
@@ -345,7 +260,7 @@ class MainWindow(QMainWindow):
         self.toolList = QDockWidget()
         self.toolList.setTitleBarWidget(menuTitle)
         self.toolList.setWidget(main)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.toolList)
+        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.toolList)
 
 
     def make_toolImport(self):
@@ -367,7 +282,7 @@ class MainWindow(QMainWindow):
         browsingLayout.addWidget(self.importFile)
         
         browse = QPushButton("Browse")
-        browse.clicked.connect(lambda: self.tool_buttons("Browse2", self.importFile))
+        browse.clicked.connect(lambda: self.buttons("Browse2", self.importFile))
         
         browsingLayout.addWidget(browse)
         browsingLayout.addStretch()
@@ -380,8 +295,8 @@ class MainWindow(QMainWindow):
         
         importer = QPushButton("Import")
         importer.setStyleSheet("background-color: #54e86c")
-        importer.clicked.connect(lambda: self.tool_buttons("Import", self.importFile))
-        importerWidget = self.make_HBox(importer, 0)
+        importer.clicked.connect(lambda: self.buttons("Import", self.importFile))
+        importerWidget = util.make_HBox(importer, 0)
         
         importLayout = QVBoxLayout()
         importLayout.addWidget(browsing)
@@ -397,27 +312,18 @@ class MainWindow(QMainWindow):
         self.toolImport = QDockWidget()
         self.toolImport.setTitleBarWidget(menuTitle)
         self.toolImport.setWidget(importContainer)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.toolImport)
+        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.toolImport)
         
-        
-        
-        
-        
-    # Quick code to make the menu buttons work
-    def menu_buttons(self, button):
-        if button == "Run":
-            self.toolList.hide()
-            self.toolEdit.hide()
-            self.toolImport.hide()
-            self.runConfiguration.show()
-        else:
-            self.toolImport.show()
-            self.toolList.show()
-            self.toolEdit.show()
-            
-            self.runConfiguration.hide()
+    def hide(self):
+        self.toolList.hide()
+        self.toolEdit.hide()
+        self.toolImport.hide()
+    def show(self):
+        self.toolImport.show()
+        self.toolList.show()
+        self.toolEdit.show()                        
 
-    def tool_buttons(self, buttonName, button):
+    def buttons(self, buttonName, button):
 
         if "Browse" in buttonName:
             if buttonName == "Browse":
@@ -445,11 +351,11 @@ class MainWindow(QMainWindow):
             if buttonName == "Add":
                 self.options.addWidget(holder)
                 # set up removal button's button
-                removeButt.clicked.connect(lambda: self.tool_buttons("Remove", label))
+                removeButt.clicked.connect(lambda: self.buttons("Remove", label))
             else:
                 self.outputSpec.addWidget(holder)
                 # set up removal button's button
-                removeButt.clicked.connect(lambda: self.tool_buttons("RemoveS", label))
+                removeButt.clicked.connect(lambda: self.buttons("RemoveS", label))
 
             button.setText("")
 
@@ -490,6 +396,7 @@ class MainWindow(QMainWindow):
                             
                             removeOpts = {"Tool_id": ObjectId(button.id)}
                             self.optionsDB.delete_many(removeOpts)
+                            self.outputDB.delete_many(removeOpts)
                             return
 
         elif buttonName == "Cancel":
@@ -566,11 +473,11 @@ class MainWindow(QMainWindow):
             
             #Redraw the table and erase the text boxes
             self.drawTable()
-            self.tool_buttons("Cancel", None)
+            self.buttons("Cancel", None)
         elif buttonName == "Switcher":
             self.editMode = 0
             self.AddTitle.setText("  Add a Tool  ")
-            self.tool_buttons("Cancel", None)
+            self.buttons("Cancel", None)
         elif buttonName == "Sort":
             if self.sortArrow == "down":
                 button.setArrowType(Qt.UpArrow)
@@ -608,7 +515,7 @@ class MainWindow(QMainWindow):
            
                 self.options.addWidget(holder)
                 # set up removal button's button
-                removeButt.clicked.connect(lambda checked,  a = label: self.tool_buttons("Remove", a))
+                removeButt.clicked.connect(lambda checked,  a = label:self.buttons("Remove", a))
                 
                 
             for i in self.outputDB.find(opt_query):
@@ -626,14 +533,13 @@ class MainWindow(QMainWindow):
            
                 self.outputSpec.addWidget(holder)
                 # set up removal button's button
-                removeButt.clicked.connect(lambda checked,  a = label: self.tool_buttons("RemoveS", a))
+                removeButt.clicked.connect(lambda checked,  a = label: self.buttons("RemoveS", a))
                 
                 
                 
         
         #elif buttonName == "Import": 
             #file = open()
-            
             
 
     def drawTable(self, reversed = 0):
@@ -652,11 +558,10 @@ class MainWindow(QMainWindow):
                 table.insertRow(index)
             table.setCellWidget(index, 0, QLabel(tool[ "Name" ]))
             table.setCellWidget(index, 1, QLabel(tool[ "Description" ]))
-            
             Buttons = QWidget()
             ButtonLayout = QHBoxLayout()
-            edit = QTablePush(tool["_id"], "Edit.png")
-            remove = QTablePush(tool["_id"],"RemoveT.png")
+            edit = QTablePush(tool["_id"], "Edit.png", self)
+            remove = QTablePush(tool["_id"],"RemoveT.png", self)
             ButtonLayout.addWidget(edit)
             ButtonLayout.addWidget(remove)
             Buttons.setLayout(ButtonLayout)
@@ -668,115 +573,9 @@ class MainWindow(QMainWindow):
         for i in range(1, self.tableWidget.rowCount()):
             self.tableWidget.verticalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
             
-    def run_config(self):
-         # Title component of menu
-        menuTitle = QLabel()
-        menuTitle.setText("  Run Configuration  ")
-        menuTitle.setFont(QFont("Times", 16))
-        menuTitle.setStyleSheet("background-color: #49d1e3")
-        menuTitle.setAlignment(Qt.AlignLeft)
-    
-        outerLayout = QVBoxLayout()
-        # Create Run Config Details layer
-        runConfigLayout = QFormLayout()
-        orLabel = self.orLabel()
-        orLabel1 =self.orLabel()
-        orLabel2 = self.orLabel()
-        
-        #Run Name
-        dateTimeObj = datetime.datetime.now()
-        timestampStr = dateTimeObj.strftime("%I:%M %m/%d/%Y %p")
-        runName = QLabel()
-        runName.setAlignment(Qt.AlignLeft)
-        runName.setText(timestampStr)
-        serifFont = QFont("TimesNewRoman", 15)
-        runName.setFont(serifFont)
-        runConfigLayout.addRow("Run Name:", runName)
-        
-        #Run Description
-        runDesc= QLineEdit()
-        runDesc.setPlaceholderText("Run Description Default")
-        runConfigLayout.addRow("Run Description:", runDesc)
-        
-        WLIPtext = QPlainTextEdit()
-        WLIPtext.setPlaceholderText("Whitelist IP Default")
-        
-        BrowseChoiceLayout = QHBoxLayout()
-        BrowseChoiceLayout.addWidget(WLIPtext)
-        BrowseChoiceLayout.addWidget(orLabel)
-        BrowseChoiceLayout.addWidget(QLabel("Browse for Whitelist Files"))
-        BrowseChoiceLayout.addWidget(QLineEdit())
-        BrowseChoiceLayout.addWidget(QPushButton("Browse"))
-        #buttonConfigFile = QPushButton("Browse")
-        BrowseWidget = QWidget()
-        BrowseWidget.setLayout(BrowseChoiceLayout)
-      
-        
-        BLIPtext = QPlainTextEdit()
-        BLIPtext.setPlaceholderText("Blacklist IP Default")
-        BrowseChoiceLayout2 = QHBoxLayout()
-        BrowseChoiceLayout2.addWidget(BLIPtext)
-        BrowseChoiceLayout2.addWidget(orLabel1)
-        BrowseChoiceLayout2.addWidget(QLabel("Browse for Blacklist Files"))
-        BrowseChoiceLayout2.addWidget(QLineEdit())
-        BrowseChoiceLayout2.addWidget(QPushButton("Browse"))
-        #buttonConfigFile = QPushButton("Browse")
-        BrowseWidget2 = QWidget()
-        BrowseWidget2.setLayout(BrowseChoiceLayout2)
- 
-        
-        runConfigLayout.addRow("Whitelisted IP Target:", BrowseWidget)
-        runConfigLayout.addRow("Blacklisted IP Target:", BrowseWidget2)
-        
-        
-        ScanType = QComboBox()
-        scanList = ["Scan Type", "Scan Type 1", "Scan Type 2 ", "Scan Type 3"]
-        ScanType.addItems(scanList)
-        runConfigLayout.addRow("Scan Type:", ScanType)
-        runConfigLayout.addWidget(orLabel2)
-        ConfigFile = QLineEdit()
-        ConfigFile.setPlaceholderText("Run Configuration File")
-        runConfigLayout.addRow("Browse for Run Configuration File:", ConfigFile,)
-        runConfigLayout.addWidget(QPushButton("Browse"))
-
-
-
-        
-        buttonWidget = self.make_saveCancel()
-
-        runConfigLayout.addWidget(buttonWidget)
-        runConfigLayout.setVerticalSpacing(20)
-        runConfigLayout.setHorizontalSpacing(10)
-        main = QWidget()
-        main.setLayout(runConfigLayout)
-        
-        self.runConfiguration = QDockWidget()
-        self.runConfiguration.setTitleBarWidget(menuTitle)
-        self.runConfiguration.setWidget(main)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.runConfiguration)
-        self.runConfiguration.setVisible(False)
-        return 
-        
-    
-    def orLabel(self):
-        
-        orLabel = QLabel()
-        orLabel.setText("-OR-")
-        orLabel.setAlignment(Qt.AlignCenter)
-        serifFont = QFont("TimesNewRoman", 14)
-        orLabel.setFont(serifFont)
-        return orLabel
 
     def dialogs(self, windowTitle, text):
-        ret = QMessageBox.question(self, windowTitle, text, QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Cancel)
+        ret = QMessageBox.question(self.win, windowTitle, text, QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Cancel)
         return ret
-if __name__ == "__main__":
-        global win
-        app = QApplication(sys.argv)
-        win = MainWindow()
-        win.show()
-        sys.exit(app.exec())
-        
-        #tacos = QTablePush(7)
-        #print(tacos.id)
+
 

@@ -29,9 +29,9 @@
 		<!-- Ex: port -->
 		<OutputSpec> </OutputSpec>
 		
-		<!-- The Path from the Output specification to the data we will compare to-->
+		<!-- The Path from the Output specification to the data we will compare to. If the data is an attribute, specify it with a .attributeName-->
 		<!--*** The field must be atomic and only have one value. List operations are not supported ***-->
-		<!-- Ex: /port/state/state-->
+		<!-- Ex: /port/state.state-->
 		<FieldPath> </FieldPath>
 		
 		<!-- The operator to use when comparing(<=, ==, >=, <, >)   *DATAFROMSPEC OPERATOR VALUE*-->
