@@ -228,7 +228,6 @@ class MainWindow(QMainWindow):
         logicalOption = ["N/A","AND","OR","NOT"]
         options2.addItems(operatorOption)
         hButton.addWidget(options2)
-        option4.addItems(operatorOption)
         hButton.addWidget(QLabel("Value"))
         hButton.addWidget(QLineEdit())
         hButton.addWidget(QPushButton("Remove"))
