@@ -8,6 +8,7 @@ from PyQt5.QtGui import *
 import pymongo
 from bson.objectid import ObjectId
 import datetime
+import os
 
 class QTablePush(QPushButton):
      global win
@@ -45,6 +46,7 @@ class MainWindow(QMainWindow):
         menuWidget.setAutoFillBackground(1)
         self.setMenuWidget(menuWidget)
         self.make_toolTable()
+        self.make_toolImport()
         self.make_toolConfig()
         self.run_config()
         self.editMode = 0
@@ -110,7 +112,7 @@ class MainWindow(QMainWindow):
         toolDep = self.make_toolDep()
 
         # Save Button Section
-        saveButt = self.make_saveCancel()
+        saveButt = self.make_saveCancel(1)
 
         # Add spacing to the page and add our widgets
         mainLayout = QVBoxLayout()
@@ -188,31 +190,13 @@ class MainWindow(QMainWindow):
         outSpec_widg = QWidget()
         outSpec_widg.setLayout(self.outputSpec)
 
-        orLabel = QLabel("OR")
-
-        specFile_container = QHBoxLayout()
-        self.specFile = QLineEdit()
-        self.specFile.setAlignment(Qt.AlignLeft)
-        specFile_container.addWidget(self.specFile)
-
-        browse = QPushButton("Browse")
-        browse.clicked.connect(lambda: self.tool_buttons("Browse", self.specFile))
-        specFile_container.addWidget(browse)
-        specFile_container.addStretch()
-        specFile_widg = QWidget()
-        specFile_widg.setLayout(specFile_container)
+       
 
         layout.addRow(QLabel("Tool Name"), self.name)
         layout.addRow(QLabel("Tool Description"), self.description)
         layout.addRow(QLabel("Tool Path"), browserWidg)
-        #used for exporting all tool data
-        exportTool=QPushButton("Export")
-        exportTool.clicked.connect(lambda:self.tool_buttons("Export", self.specFile))
-        specFile_container.addWidget(exportTool)
         layout.addRow(QLabel("Option and Argument"), opt_widg)
         layout.addRow(QLabel("Output Specification"), outSpec_widg)
-        layout.addRow(orLabel)
-        layout.addRow(QLabel("Tool  Specification File"), specFile_widg)
 
         layoutHolder = QWidget()
         layoutHolder.setLayout(layout)
@@ -256,7 +240,7 @@ class MainWindow(QMainWindow):
         layoutHolder.setLayout(layout)
         return layoutHolder
 
-    def make_saveCancel(self):
+    def make_saveCancel(self, exportOption = 0):
         layout = QHBoxLayout()
         save = QPushButton("Save")
         save.setStyleSheet("background-color: #54e86c")
@@ -264,11 +248,19 @@ class MainWindow(QMainWindow):
         cancel = QPushButton("Cancel")
         cancel.setStyleSheet("background-color: #e6737e")
         cancel.clicked.connect(lambda: self.tool_buttons("Cancel", None))
-        layout.addSpacing(20)
+        if exportOption:
+            export = QPushButton("Export Current Configuration to XML")
+            export.setStyleSheet("background-color: #49d1e3")
+            export.clicked.connect(lambda: self.tool_buttons("Export", None))
+            
+            
         layout.addStretch()
-        layout.addStretch()
+        
         layout.addWidget(cancel)
+        if exportOption: 
+            layout.addWidget(export)
         layout.addWidget(save)
+        layout.addStretch()
 
         container = QWidget()
         container.setLayout(layout)
@@ -277,12 +269,12 @@ class MainWindow(QMainWindow):
 
     def make_HBox(self, widget, spacingType):
         layout = QHBoxLayout()
-        if spacingType:
+        if spacingType == 1:
             layout.addSpacing(2)
         else:
             layout.addStretch()
         layout.addWidget(widget)
-        if spacingType:
+        if spacingType == 1:
             layout.addSpacing(2)
         else:
             layout.addStretch()
@@ -343,7 +335,7 @@ class MainWindow(QMainWindow):
         mainLayout = QVBoxLayout()
         mainLayout.addWidget(self.tableWidget)
         mainLayout.addWidget(holder)
-        mainLayout.addStretch()
+        mainLayout.addSpacing(10)
 
         main = QWidget()
         main.setLayout(mainLayout)
@@ -355,22 +347,83 @@ class MainWindow(QMainWindow):
         self.toolList.setWidget(main)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.toolList)
 
-        # Quick code to make the menu buttons work
 
+    def make_toolImport(self):
+         # Title component of menu
+        menuTitle = QLabel()
+        menuTitle.setText(" Tool Import ")
+        menuTitle.setFont(QFont("Times", 16))
+        menuTitle.setStyleSheet("background-color: #49d1e3")
+        menuTitle.setAlignment(Qt.AlignLeft)
+        
+    
+        browsingLayout = QHBoxLayout()
+        browseLabel = QLabel("Tool Specification File ")
+        browsingLayout.addStretch()
+        browsingLayout.addWidget(browseLabel)
+        
+        self.importFile = QLineEdit()
+        self.importFile.setAlignment(Qt.AlignLeft)
+        browsingLayout.addWidget(self.importFile)
+        
+        browse = QPushButton("Browse")
+        browse.clicked.connect(lambda: self.tool_buttons("Browse2", self.importFile))
+        
+        browsingLayout.addWidget(browse)
+        browsingLayout.addStretch()
+        browsing = QWidget()
+        browsing.setLayout(browsingLayout)
+        
+        filePath = "file:///{}/SampleTool.xml".format(os.getcwd())
+        sample = QLabel("<a href = {}>Open Sample Tool Specification File</a>".format(filePath))
+        sample.setOpenExternalLinks(True)
+        
+        importer = QPushButton("Import")
+        importer.setStyleSheet("background-color: #54e86c")
+        importer.clicked.connect(lambda: self.tool_buttons("Import", self.importFile))
+        importerWidget = self.make_HBox(importer, 0)
+        
+        importLayout = QVBoxLayout()
+        importLayout.addWidget(browsing)
+        importLayout.addWidget(sample)
+        importLayout.addWidget(importerWidget)
+        importLayout.addStretch()
+        
+        importContainer = QWidget()
+        importContainer.setLayout(importLayout)
+        
+        
+        
+        self.toolImport = QDockWidget()
+        self.toolImport.setTitleBarWidget(menuTitle)
+        self.toolImport.setWidget(importContainer)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.toolImport)
+        
+        
+        
+        
+        
+    # Quick code to make the menu buttons work
     def menu_buttons(self, button):
         if button == "Run":
             self.toolList.hide()
             self.toolEdit.hide()
+            self.toolImport.hide()
             self.runConfiguration.show()
         else:
+            self.toolImport.show()
             self.toolList.show()
             self.toolEdit.show()
+            
             self.runConfiguration.hide()
 
     def tool_buttons(self, buttonName, button):
 
-        if buttonName == "Browse":
-            fname = QFileDialog.getOpenFileName(None, "Select a file...", "./", filter="All files (*)")
+        if "Browse" in buttonName:
+            if buttonName == "Browse":
+                fname = QFileDialog.getExistingDirectory(None, "Select a Directory...")
+            else: 
+                fname = QFileDialog.getOpenFileName(None, "Select a file...", "./", filter = "*.xml")
             if isinstance(fname, tuple):
                 button.setText(str(fname[ 0 ]))
             else:
@@ -402,7 +455,7 @@ class MainWindow(QMainWindow):
 
         elif "Remove" in buttonName:
             if buttonName == "Remove":
-                ret = self.remove_dialogs("Option Removal", "Remove {} from the options?".format(button))
+                ret = self.dialogs("Option Removal", "Remove {} from the options?".format(button))
                 if ret == QMessageBox.Yes:
                     for i in range(self.options.count()):
                         if i == 0:
@@ -414,7 +467,7 @@ class MainWindow(QMainWindow):
                             return
 
             elif buttonName == "RemoveS":
-                ret = self.remove_dialogs("Output Specification Removal", "Remove {} from the output specification? ".format(button))
+                ret = self.dialogs("Output Specification Removal", "Remove {} from the output specification? ".format(button))
                 if ret == QMessageBox.Yes:
                     for i in range(self.outputSpec.count()):
                         if i == 0:
@@ -423,7 +476,7 @@ class MainWindow(QMainWindow):
                             self.outputSpec.itemAt(i).widget().setParent(None)
                             return
             else:
-                ret = self.remove_dialogs("Tool Removal", "Remove the Selected Tool?")
+                ret = self.dialogs("Tool Removal", "Remove the Selected Tool?")
 
                 if ret == QMessageBox.Yes:
                     for i in range(1, self.tableWidget.rowCount()):
@@ -533,6 +586,8 @@ class MainWindow(QMainWindow):
                 self.options.addWidget(holder)
                 # set up removal button's button
                 removeButt.clicked.connect(lambda checked,  a = label: self.tool_buttons("Remove", a))
+        #elif buttonName == "Import": 
+            #file = open()
             
             
 
@@ -667,7 +722,7 @@ class MainWindow(QMainWindow):
         orLabel.setFont(serifFont)
         return orLabel
 
-    def remove_dialogs(self, windowTitle, text):
+    def dialogs(self, windowTitle, text):
         ret = QMessageBox.question(self, windowTitle, text, QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Cancel)
         return ret
 if __name__ == "__main__":

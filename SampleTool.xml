@@ -1,0 +1,54 @@
+<Tool>
+	<!-- The Tool's Name-->
+	<!-- Ex: Nikto-->
+	<Name> </Name>
+	
+	<!-- The Tool's Description-->
+	<!-- Ex: Web Server Scanner-->
+	<Description> </Description>
+	
+	<!-- The Path to the Tool-->
+	<!-- Ex: C://Users/User1/Dowloads/Nikto -->
+	<Path></Path>
+	
+	<!--Semicolon - separated options for the tool-->
+	<!-- Ex: -ssl; -nointeractive; -->
+	<Options></Options>
+	
+	<!--Semicolon-separated output specifications for the tool-->
+	<!-- Ex: <port>; <ports>;
+	<OutputSpec> </OutputSpec>
+	
+	<!--For every tool dependency-->
+	<Dependency>
+		<!-- Name of the Tool that it depends on -->
+		<!-- Ex: Nmap -->
+		<ToolName> <ToolName>
+		
+		<!-- The Output that will be used -->
+		<!-- Ex: port -->
+		<OutputSpec> </OutputSpec>
+		
+		<!-- The Path from the Output specification to the data we will compare to-->
+		<!--*** The field must be atomic and only have one value. List operations are not supported ***-->
+		<!-- Ex: /port/state/state-->
+		<FieldPath> </FieldPath>
+		
+		<!-- The operator to use when comparing(<=, ==, >=, <, >)   *DATAFROMSPEC OPERATOR VALUE*-->
+		<!-- Ex: == -->
+		<Operator> <Operator>
+		
+		<!--The value to compare to -->
+		<!-- Ex: open -->
+		<Value> </Value>
+		
+		<!-- Option to run when comparison is true -->
+		<!-- Interprets it as a string in the arguemnts. If you specify field(path), 
+		it will get the selected data from the output specification of the dependent tool -->
+		<!--*** The field must be atomic and only have one value. List operations are not supported ***-->
+		<!-- Ex for Nikto: -port field(/port/portid)-->
+		<Expression></Expression>
+		
+	</Dependency>
+
+</Tool>
