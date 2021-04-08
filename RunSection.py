@@ -9,11 +9,14 @@ import datetime
 import os
 import Utils as util
 
+
 class RunSection():
     def __init__(self, window):
         self.win = window
         self.run_config()
-        
+        self.edit()
+        self.importFile()
+
     def run_config(self):
 
         # Establish Connection to MongoDB - Run Config
@@ -22,13 +25,13 @@ class RunSection():
         db = client[ 'Test' ]
         self.config = db[ "Run Config" ]
 
-         # Title component of menu
+        # Title component of menu
         menuTitle = QLabel()
         menuTitle.setText("  Run Configuration  ")
         menuTitle.setFont(QFont("Times", 16))
         menuTitle.setStyleSheet("background-color: #49d1e3")
         menuTitle.setAlignment(Qt.AlignLeft)
-    
+
         outerLayout = QVBoxLayout()
 
         # Create Run Config Details layer
@@ -65,7 +68,7 @@ class RunSection():
         wlipBrowse = QPushButton("Browse")
         BrowseChoiceLayout.addWidget(wlipBrowse)
         # buttonConfigFile = QPushButton("Browse")
-        wlipBrowse.clicked.connect(lambda: self.buttons("Browse",self.path))
+        wlipBrowse.clicked.connect(lambda: self.buttons("Browse", self.path))
         BrowseWidget = QWidget()
         BrowseWidget.setLayout(BrowseChoiceLayout)
 
@@ -80,7 +83,7 @@ class RunSection():
         BrowseChoiceLayout2.addWidget(self.bPath)
         blipBrowse = QPushButton("Browse")
         BrowseChoiceLayout2.addWidget(blipBrowse)
-        blipBrowse.clicked.connect(lambda: self.buttons("Browse",self.bPath))
+        blipBrowse.clicked.connect(lambda: self.buttons("Browse", self.bPath))
         BrowseWidget2 = QWidget()
         BrowseWidget2.setLayout(BrowseChoiceLayout2)
 
@@ -97,7 +100,7 @@ class RunSection():
         runConfigLayout.addRow("Browse for Run Configuration File:", self.ConfigFile, )
         configButton = QPushButton("Browse")
         runConfigLayout.addWidget(configButton)
-        configButton.clicked.connect(lambda: self.buttons("Browse",self.ConfigFile))
+        configButton.clicked.connect(lambda: self.buttons("Browse", self.ConfigFile))
 
         buttonWidget = util.make_saveCancel(self)
 
@@ -115,13 +118,81 @@ class RunSection():
         self.runConfiguration.setVisible(False)
         return
 
+    def edit(self):
+        menuTitle = QLabel()
+        menuTitle.setText("  Run Table  ")
+        menuTitle.setFont(QFont("Times", 16))
+        menuTitle.setStyleSheet("background-color: #49d1e3")
+        menuTitle.setAlignment(Qt.AlignLeft)
 
-    def buttons(self, buttonName,button):
+        editLayout = QFormLayout()
+        editLayout.addWidget(QLabel("***** TEST *****"))
+        editLayout.addWidget(QLabel("***** ADD Table with Run,Pause,Stop buttons*****"))
+
+        editContainer = QWidget()
+        editContainer.setLayout(editLayout)
+
+        self.table = QDockWidget()
+        self.table.setTitleBarWidget(menuTitle)
+        self.table.setWidget(editContainer)
+        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.table)
+        self.table.setVisible(False)
+
+    def importFile(self):
+        # Title component of menu
+        menuTitle = QLabel()
+        menuTitle.setText(" Run Configuration File Import ")
+        menuTitle.setFont(QFont("Times", 16))
+        menuTitle.setStyleSheet("background-color: #49d1e3")
+        menuTitle.setAlignment(Qt.AlignLeft)
+
+        browsingLayout = QHBoxLayout()
+        browseLabel = QLabel(" Run Configuration File ")
+        browsingLayout.addStretch()
+        browsingLayout.addWidget(browseLabel)
+
+        self.importFile = QLineEdit()
+        self.importFile.setAlignment(Qt.AlignLeft)
+        browsingLayout.addWidget(self.importFile)
+
+        browse = QPushButton("Browse")
+        browse.clicked.connect(lambda: self.buttons("Browse2", self.importFile))
+
+        browsingLayout.addWidget(browse)
+        browsingLayout.addStretch()
+        browsing = QWidget()
+        browsing.setLayout(browsingLayout)
+
+        filePath = "file:///{}/SampleTool.xml".format(os.getcwd())
+        sample = QLabel("<a href = {}>Open Run Configuration Specification File</a>".format(filePath))
+        sample.setOpenExternalLinks(True)
+
+        importer = QPushButton("Import")
+        importer.setStyleSheet("background-color: #54e86c")
+        importer.clicked.connect(lambda: self.buttons("Import", self.importFile))
+        importerWidget = util.make_HBox(importer, 0)
+
+        importLayout = QVBoxLayout()
+        importLayout.addWidget(browsing)
+        importLayout.addWidget(sample)
+        importLayout.addWidget(importerWidget)
+        importLayout.addStretch()
+
+        importContainer = QWidget()
+        importContainer.setLayout(importLayout)
+
+        self.toolImport = QDockWidget()
+        self.toolImport.setTitleBarWidget(menuTitle)
+        self.toolImport.setWidget(importContainer)
+        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.toolImport)
+        self.toolImport.setVisible(False)
+
+    def buttons(self, buttonName, button, NULL=None):
         if "Browse" in buttonName:
             if buttonName == "Browse":
                 fname = QFileDialog.getExistingDirectory(None, "Select a Directory...")
             else:
-                fname = QFileDialog.getOpenFileName(None, "Select a file...", "./", filter="*(All Files)")
+                fname = QFileDialog.getOpenFileName(None, "Select a file...", "./", filter="All files (*)")
             if isinstance(fname, tuple):
                 button.setText(str(fname[ 0 ]))
             else:
@@ -130,11 +201,13 @@ class RunSection():
             name = self.runName.text()
             description = self.runDesc.toPlainText()
             wlipText = self.WLIPtext.toPlainText()
-            wlipFile =self.path.text()
+            wlipFile = self.path.text()
             blipText = self.BLIPtext.toPlainText()
             blipFile = self.bPath.text()
-            runFile = self.ConfigFile.text()
-            inputStr = {"Run Name":name,"Run Description":description,"Target Whitelist":wlipText,"Whitelist File": wlipFile,"Target Blacklist":blipText,"Blacklist File":blipFile,"Run Configuration File":runFile}
+            runFile = self.importFile.text()
+            inputStr = {"Run Name": name, "Run Description": description, "Target Whitelist": wlipText,
+                        "Whitelist File": wlipFile, "Target Blacklist": blipText, "Blacklist File": blipFile,
+                        "Run Configuration File": runFile}
             self.config.insert_one(inputStr)
         elif "Cancel" in buttonName:
             self.runName.setText("")
@@ -144,11 +217,18 @@ class RunSection():
             self.bPath.setText("")
             self.path.setText("")
             self.ConfigFile.setText("")
+            self.importFile.text("")
 
-            
+
+
+
     def hide(self):
         self.runConfiguration.setVisible(False)
+        self.table.setVisible(False)
+        self.toolImport.setVisible(False)
+
     def show(self):
         self.runConfiguration.setVisible(True)
-
+        self.table.setVisible(True)
+        self.toolImport.setVisible(True)
 
