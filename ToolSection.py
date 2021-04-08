@@ -459,7 +459,7 @@ class ToolSection():
             self.name.setText("")
             self.description.setText("")
             self.path.setText("")
-            self.FieldPath.setText("")
+            self.fieldPath.setText("")
             self.value.setText("")
             for i in reversed(range(self.options.count())):
                 if i == 0:
