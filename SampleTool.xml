@@ -21,6 +21,9 @@
 	
 	<!--For every tool dependency-->
 	<Dependency>
+	    <!--The dependencies condition-->
+		<!--Can be AND, OR, NOR, NAND -->
+	    <Condition> </Condition>
 		<!-- Name of the Tool that it depends on -->
 		<!-- Ex: Nmap -->
 		<ToolName> <ToolName>
@@ -34,7 +37,7 @@
 		<!-- Ex: /port/state.state-->
 		<FieldPath> </FieldPath>
 		
-		<!-- The operator to use when comparing(<=, ==, >=, <, >)   *DATAFROMSPEC OPERATOR VALUE*-->
+		<!-- The operator to use when comparing(<=, ==, >=, <, >)   *FieldPath  OPERATOR VALUE*-->
 		<!-- Ex: == -->
 		<Operator> <Operator>
 		
@@ -42,12 +45,6 @@
 		<!-- Ex: open -->
 		<Value> </Value>
 		
-		<!-- Option to run when comparison is true -->
-		<!-- Interprets it as a string in the arguemnts. If you specify field(path), 
-		it will get the selected data from the output specification of the dependent tool -->
-		<!--*** The field must be atomic and only have one value. List operations are not supported ***-->
-		<!-- Ex for Nikto: -port field(/port/portid)-->
-		<Expression></Expression>
 		
 	</Dependency>
 

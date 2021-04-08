@@ -34,6 +34,7 @@ class ToolSection():
     
         self.optionsDB = db["Options"]
         self.outputDB = db["Output"]
+        self.dependencyDB = db["Dependencies"]
     
         #variable setup
         self.win = window
@@ -458,6 +459,8 @@ class ToolSection():
             self.name.setText("")
             self.description.setText("")
             self.path.setText("")
+            self.FieldPath.setText("")
+            self.value.setText("")
             for i in reversed(range(self.options.count())):
                 if i == 0:
                     self.options.itemAt(i).widget().layout().itemAt(0).widget().setText("")
@@ -468,6 +471,9 @@ class ToolSection():
                     self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().setText("")
                 else:
                     self.outputSpec.itemAt(i).widget().setParent(None)
+            for i in range(self.dependencies.count()):
+                self.dependencies.itemAt(i).widget().setParent(None)
+            
             if self.editMode == 1:
                 self.editMode = 0
                 self.AddTitle.setText("Add a Tool")
@@ -500,6 +506,28 @@ class ToolSection():
                         outputSpec = self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().text()
                         inputter = {"Tool_id": tool_id, "OutputSpec": outputSpec}
                         self.outputDB.insert_one(inputter)
+                
+                #for dependencies
+                for i in range(self.dependencies.count()):
+                    dependencyStr = self.dependencies.itemAt(i).widget().layout().itemAt(0).widget().text()
+                    dependencyAttributes = [i.split(":")[1] for i in dependencyStr.split(",")]
+                    toolQuery = {"Name": dependencyAttributes[1]}
+                    tool = self.tools.find(toolQuery)
+                    if tool is not None: 
+                        tool_id = ""
+                        for i in tool: 
+                            tool_id = ObjectId(i["_id"])
+                            break
+                        outputQuery = {"Tool_id": tool_id, "OutputSpec": dependencyAttributes[2]}
+                        output = self.outputDB.find(outputQuery)
+                        if output is not None: 
+                            output_id = ""
+                            for j in output:
+                                output_id = ObjectId(j["_id"])
+                                break
+                            dependencyInsert = {"Condition": dependencyAttributes[0], "Output_id": output_id, "FieldPath": dependencyAttributes[3], "Operator": dependencyAttributes[4], "Value": dependencyAttributes[5]}
+                            self.dependencyDB.insert_one(dependencyInsert)
+                            
             else:
                 self.editMode = 0
                 self.AddTitle.setText("  Add a Tool  ")
