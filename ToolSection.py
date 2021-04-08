@@ -8,6 +8,8 @@ from bson.objectid import ObjectId
 import datetime
 import os
 import Utils as util
+#import xml.etree.ElementTree as xml
+import lxml.etree as xml
 
 class QTablePush(QPushButton):
      def __init__(self, id, text, toolSection):
@@ -537,10 +539,92 @@ class ToolSection():
                 
                 
                 
-        
-        #elif buttonName == "Import": 
-            #file = open()
+        elif buttonName == "Export":
+            fileName, _ = QFileDialog.getSaveFileName(self.win,"Export File Name","./","*.xml")
+            if fileName:
+                file = open(fileName, "wb")
+                root = xml.Element("Tool")
+                
+                name = xml.SubElement(root, "Name")
+                desc = xml.SubElement(root, "Description")
+                path = xml.SubElement(root, "Path")
+                
+                name.text = self.name.text()
+                desc.text = self.description.text()
+                path.text = self.path.text()
+                
+                options = xml.SubElement(root, "Options")
+                optStr = ""
+                for i in range(1, self.options.count()):
+                    optStr += self.options.itemAt(i).widget().layout().itemAt(0).widget().text() + ";"
+                options.text = optStr
+                
+                output = xml.SubElement(root, "OutputSpec")
+                outputStr = ""
+                for i in range(1, self.outputSpec.count()):
+                    outputStr += self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().text() + ";"
+                output.text = outputStr
+                
+                tree = xml.ElementTree(root)
+                tree.write(file, pretty_print = True)
+                file.close()
+        elif buttonName == "Import": 
+            filename = button.text()
+            root = xml.parse(filename).getroot()
+            name = root.find("Name")
+            description = root.find("Description")
+            path = root.find("Path")
+            option = root.find("Options")
+            if option is not None:
+                optionsArr = option.text.split(";")[:-1]
+            else:
+                optionsArr = []
+            output = root.find("OutputSpec")
+            if output is not None:
+                outputSpecArr = output.text.split(";")[:-1]
+            else:
+                outputSpecArr = []
             
+            if name is not None:
+                self.name.setText(name.text)
+            if description is not None:
+                self.description.setText(description.text)
+            if path is not None:
+                self.path.setText(path.text)
+                
+            for label in optionsArr:
+                # make layout to hold name and button
+                hLayout = QHBoxLayout()
+                addedLabel = QLabel(label)
+                removeButt = QPushButton("Remove")
+                hLayout.addWidget(addedLabel)
+                hLayout.addWidget(removeButt)
+
+                # make a holder
+                holder = QWidget()
+                holder.setLayout(hLayout)
+           
+                self.options.addWidget(holder)
+                # set up removal button's button
+                removeButt.clicked.connect(lambda checked,  a = label:self.buttons("Remove", a))
+                
+                
+            for label in outputSpecArr:
+                # make layout to hold name and button
+                hLayout = QHBoxLayout()
+                addedLabel = QLabel(label)
+                removeButt = QPushButton("Remove")
+                hLayout.addWidget(addedLabel)
+                hLayout.addWidget(removeButt)
+
+                # make a holder
+                holder = QWidget()
+                holder.setLayout(hLayout)
+           
+                self.outputSpec.addWidget(holder)
+                # set up removal button's button
+                removeButt.clicked.connect(lambda checked,  a = label: self.buttons("RemoveS", a))
+                
 
     def drawTable(self, reversed = 0):
         table = self.tableWidget

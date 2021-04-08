@@ -47,7 +47,6 @@ def make_HBox(widget, spacingType):
     return container
 #Makes a Text orlabel
 def orLabel():
-
     orLabel = QLabel()
     orLabel.setText("-OR-")
     orLabel.setAlignment(Qt.AlignCenter)
