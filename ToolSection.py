@@ -10,6 +10,7 @@ import os
 import Utils as util
 #import xml.etree.ElementTree as xml
 import lxml.etree as xml
+import numpy as np
 
 class QTablePush(QPushButton):
      def __init__(self, id, text, toolSection):
@@ -29,6 +30,8 @@ class ToolSection():
         client = pymongo.MongoClient("mongodb+srv://aaron:EDVsK1hnYHJEWZry@seacluster.f3vdv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
         db = client['Test']
         self.tools = db["Tools"]
+
+    
         self.optionsDB = db["Options"]
         self.outputDB = db["Output"]
     
@@ -161,24 +164,61 @@ class ToolSection():
         layoutHolder.setLayout(layout)
         return layoutHolder
 
+    def make_tool_dropdowns(self):
+        self.model.clear()
+        tools = self.tools.find()
+        for tool in tools: 
+            Id = tool["_id"]
+            toolName = QStandardItem(tool["Name"])
+            self.model.appendRow(toolName)
+            
+            out_query = {"Tool_id": Id}
+            for i in self.outputDB.find(out_query):
+                outputSpec = QStandardItem(i["OutputSpec"])
+                toolName.appendRow(outputSpec)
+        
+    def updateToolDropdown(self, index):
+        indx = self.model.index(index, 0, self.toolSelections.rootModelIndex())
+        self.outputSelections.setRootModelIndex(indx)
+        self.outputSelections.setCurrentIndex(0)
+        
     def make_toolDep(self):
         layout = QVBoxLayout()
+        self.model = QStandardItemModel()
 
         hButton = QHBoxLayout()
-        hButton.addWidget(QLabel("Dependent Data"))
-        options = QComboBox()
-        options.addItem("Dependent Ex")
-        hButton.addWidget(options)
+        
+        
+        self.toolSelections = QComboBox()
+        self.toolSelections.setModel(self.model)
+        
+        self.outputSelections = QComboBox()
+        self.outputSelections.setModel(self.model)
+        self.make_tool_dropdowns()
+        
+        self.toolSelections.currentIndexChanged.connect(self.updateToolDropdown)
+        self.updateToolDropdown(0)
+        
+        self.fieldPath = QLineEdit()
+        
+        self.operator = QComboBox()
+        operatorOption = ["<",">","<=",">=","==","~="]
+        self.operator.addItems(operatorOption)
+        
+        self.value = QLineEdit()
+        
+        
+        hButton.addWidget(QLabel("Tool Name"))
+        hButton.addWidget(self.toolSelections)
+        hButton.addWidget(QLabel("Output Specification"))
+        hButton.addWidget(self.outputSelections)
+        hButton.addWidget(QLabel("Field Path "))
+        hButton.addWidget(self.fieldPath)
         hButton.addWidget(QLabel("Operator"))
-        options2 = QComboBox()
-        operatorOption = ["N/A","<",">","<=",">=","==","~="]
-        logicalOption = ["N/A","AND","OR","NOT"]
-        options2.addItems(operatorOption)
-        hButton.addWidget(options2)
-
+        hButton.addWidget(self.operator)
         hButton.addWidget(QLabel("Value"))
-        hButton.addWidget(QLineEdit())
-        hButton.addWidget(QPushButton("Remove"))
+        hButton.addWidget(self.value)
+
         hButtonHolder = QWidget()
         hButtonHolder.setLayout(hButton)
         add = QPushButton("ADD")
@@ -399,6 +439,7 @@ class ToolSection():
                             removeOpts = {"Tool_id": ObjectId(button.id)}
                             self.optionsDB.delete_many(removeOpts)
                             self.outputDB.delete_many(removeOpts)
+                            self.make_tool_dropdowns()
                             return
 
         elif buttonName == "Cancel":
@@ -447,34 +488,61 @@ class ToolSection():
                         outputSpec = self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().text()
                         inputter = {"Tool_id": tool_id, "OutputSpec": outputSpec}
                         self.outputDB.insert_one(inputter)
-                        
             else:
                 self.editMode = 0
                 self.AddTitle.setText("  Add a Tool  ")
                 self.tools.update_one({"_id": self.currId}, { "$set": {"Name": name, "Description": description, "Path": path}})
                 #options update
-                self.optionsDB.delete_many({"Tool_id": self.currId})
-                self.outputDB.delete_many({"Tool_id": self.currId})
-                for i in reversed(range(self.options.count())):
-                    if i == 0:
-                        pass
-                    else:
-                        option = self.options.itemAt(i).widget().layout().itemAt(0).widget().text()
-                        inputter = {"Tool_id": self.currId, "Option": option}
-                        self.optionsDB.insert_one(inputter)
+                deletelist = list()
+                currentToolFilter = {"Tool_id": self.currId}
+                for i in self.optionsDB.find(currentToolFilter): 
+                    delete_flag = 1
+                    for j in range(1, self.options.count()):
+                        option = self.options.itemAt(j).widget().layout().itemAt(0).widget().text()
+                        if i["Option"] == option:
+                            delete_flag = 0
+                            break 
+                        
+                    if delete_flag:    
+                        delete_key = {"Tool_id": self.currId, "Option": i["Option"]}
+                        deletelist.append(delete_key)
+                
+                for i in deletelist: 
+                    self.optionsDB.delete_one(i)
+                
+                for i in range(1, self.options.count()):
+                    option = self.options.itemAt(i).widget().layout().itemAt(0).widget().text()
+                    inputter = {"Tool_id": self.currId, "Option": option}
+                    self.optionsDB.update_one(inputter, { "$setOnInsert": inputter}, upsert = True)
+
+                    
                         
                         
-                 #for output Specification
-                for i in reversed(range(self.outputSpec.count())):
-                    if i == 0: 
-                        pass
-                    else:
-                        outputSpec = self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().text()
-                        inputter = {"Tool_id": self.currId, "OutputSpec": outputSpec}
-                        self.outputDB.insert_one(inputter)
+                deletelist = list()
+                for i in self.outputDB.find(currentToolFilter): 
+                    delete_flag = 1
+                    for j in range(1, self.outputSpec.count()):
+                        outputStr = self.outputSpec.itemAt(j).widget().layout().itemAt(0).widget().text()
+                        if i["OutputSpec"] == outputStr:
+                            delete_flag = 0
+                            break 
+                        
+                    if delete_flag:    
+                        delete_key = {"Tool_id": self.currId, "OutputSpec": i["OutputSpec"]}
+                        deletelist.append(delete_key)
+                
+                for i in deletelist: 
+                    self.outputDB.delete_one(i)
+                
+                for i in range(1, self.outputSpec.count()):
+                    outputStr = self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().text()
+                    inputter = {"Tool_id": self.currId, "OutputSpec": outputStr}
+                    self.outputDB.update_one(inputter, { "$setOnInsert": inputter}, upsert = True)
+                        
             
             #Redraw the table and erase the text boxes
             self.drawTable()
+            self.make_tool_dropdowns()
             self.buttons("Cancel", None)
         elif buttonName == "Switcher":
             self.editMode = 0
@@ -631,11 +699,13 @@ class ToolSection():
         index = 1
         tools = self.tools.find()
         maxInd = self.tools.count_documents({})
-        for i in range(1, maxInd):
-            if reversed: 
-                tool = tools[maxInd - i]
-            else:
-                tool = tools[i]
+        
+        if reversed:
+            start, end, increment = maxInd-1, -1, -1
+        else: 
+            start, end, increment = 0, maxInd, 1
+        for i in range(start, end, increment):
+            tool = tools[i]
             if index < table.rowCount():
                 pass
             else:
