@@ -7,7 +7,9 @@ import pymongo
 from bson.objectid import ObjectId
 import datetime
 import os
+import lxml.etree as xml
 import Utils as util
+from ToolSection import QTablePush
 
 
 class RunSection():
@@ -107,7 +109,7 @@ class RunSection():
             scanList.append(string1)
         self.ScanType.addItems(scanList)
         runConfigLayout.addRow("Scan Type:", self.ScanType)
-        buttonWidget = util.make_saveCancel(self)
+        buttonWidget = util.make_saveCancel(self,1)
 
         runConfigLayout.addWidget(buttonWidget)
         runConfigLayout.setVerticalSpacing(20)
@@ -132,18 +134,95 @@ class RunSection():
         menuTitle.setStyleSheet("background-color: #49d1e3")
         menuTitle.setAlignment(Qt.AlignLeft)
 
-        editLayout = QFormLayout()
-        editLayout.addWidget(QLabel("***** TEST *****"))
-        editLayout.addWidget(QLabel("***** ADD Table with Run,Pause,Stop buttons*****"))
+        self.tableWidget = QTableWidget(1,4)
+        self.tableWidget.setColumnHidden(3,True)
+        self.tableWidget.setEditTriggers(QTableWidget.NoEditTriggers)
 
-        editContainer = QWidget()
-        editContainer.setLayout(editLayout)
+        col1Title = QLabel()
+        col1Title.setText("Run Configuration Name")
+        self.sortArrow = "down"
+        nameSortButton = QToolButton()
+        nameSortButton.setArrowType(Qt.DownArrow)
+        nameSortButton.clicked.connect(lambda: self.buttons("Sort", nameSortButton))
+        col1Layout = QHBoxLayout()
+        col1Layout.addStretch()
+        col1Layout.addWidget(col1Title)
+        col1Layout.addWidget(nameSortButton)
+        col1Layout.addStretch()
 
-        self.table = QDockWidget()
-        self.table.setTitleBarWidget(menuTitle)
-        self.table.setWidget(editContainer)
-        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.table)
-        self.table.setVisible(False)
+        # Set Columns for the table
+        col1Widget = QWidget()
+        col1Widget.setLayout(col1Layout)
+        self.tableWidget.setCellWidget(0, 0, col1Widget)
+        self.tableWidget.setCellWidget(0, 1, QLabel("Description of Run"))
+        self.tableWidget.setCellWidget(0, 2, QLabel(" Scan "))
+        header = self.tableWidget.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        self.tableWidget.verticalHeader().hide()
+        self.tableWidget.horizontalHeader().hide()
+
+        # Add button
+        addLayout = QHBoxLayout()
+        addLayout.addStretch(1)
+        push = QPushButton("Add Tool")
+        push.setStyleSheet("background-color: #54e86c")
+        push.clicked.connect(lambda: self.buttons("Switcher", None))
+        addLayout.addWidget(push)
+        holder = QWidget()
+        holder.setLayout(addLayout)
+
+        mainLayout = QVBoxLayout()
+        mainLayout.addWidget(self.tableWidget)
+        mainLayout.addWidget(holder)
+        mainLayout.addSpacing(10)
+
+        main = QWidget()
+        main.setLayout(mainLayout)
+
+        self.drawTable()
+
+        self.toolList = QDockWidget()
+        self.toolList.setTitleBarWidget(menuTitle)
+        self.toolList.setWidget(main)
+        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.toolList)
+        self.toolList.setVisible(False)
+
+    def drawTable(self, reversed=0):
+        table = self.tableWidget
+        index = 1
+        tools = self.config.find()
+        maxInd = self.config.count_documents({})
+
+        if reversed:
+            start, end, increment = maxInd - 1, -1, -1
+        else:
+            start, end, increment = 0, maxInd, 1
+        for i in range(start, end, increment):
+            tool = tools[ i ]
+            if index < table.rowCount():
+                pass
+            else:
+                table.insertRow(index)
+            table.setCellWidget(index, 0, QLabel(tool[ "Run Name" ]))
+            table.setCellWidget(index, 1, QLabel(tool[ "Run Description" ]))
+
+            Buttons = QWidget()
+            ButtonLayout = QHBoxLayout()
+            edit = QTablePush(tool[ "_id" ], "play.png", self)
+            remove = QTablePush(tool[ "_id" ], "pause.png", self)
+            ButtonLayout.addWidget(edit)
+            ButtonLayout.addWidget(remove)
+            Buttons.setLayout(ButtonLayout)
+            table.setCellWidget(index, 2, Buttons)
+            # table.setCellWidget(index, 2, QPushButton("Remove"))
+            table.setCellWidget(index, 3, QLabel(str(tool[ "_id" ])))
+            index += 1
+
+        for i in range(1, self.tableWidget.rowCount()):
+            self.tableWidget.verticalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+
 
     def importFile(self):
         # Title component of menu
@@ -194,12 +273,12 @@ class RunSection():
         self.win.addDockWidget(Qt.LeftDockWidgetArea, self.toolImport)
         self.toolImport.setVisible(False)
 
-    def buttons(self, buttonName, button, NULL=None):
+    def buttons(self, buttonName, button):
         if "Browse" in buttonName:
             if buttonName == "Browse":
                 fname = QFileDialog.getExistingDirectory(None, "Select a Directory...")
             else:
-                fname = QFileDialog.getOpenFileName(None, "Select a file...", "./", filter="All files (*)")
+                fname = QFileDialog.getOpenFileName(None, "Select a file...", "./", filter="All files(*)")
             if isinstance(fname, tuple):
                 button.setText(str(fname[ 0 ]))
             else:
@@ -227,16 +306,66 @@ class RunSection():
             self.path.setText("")
             self.importFile.setText("")
 
+        elif buttonName == "Export":
+            fileName, _ = QFileDialog.getSaveFileName(self.win, "Export File Name", "./", "*.xml")
+            if fileName:
+                file = open(fileName, "wb")
+                root = xml.Element("RunConfiguration")
+
+                name = xml.SubElement(root, "RunName")
+                desc = xml.SubElement(root, "RunDescription")
+                wlip = xml.SubElement(root,"TargetWhitelistIP")
+                path = xml.SubElement(root, "WhitelistPath")
+                blip = xml.SubElement(root,"TargetBlacklistIP")
+                blipPath = xml.SubElement(root, "BlacklistPath")
+                scanType = xml.SubElement(root,"ScanType")
+
+                name.text = self.runName.text()
+                desc.toPlainText = self.runDesc.toPlainText()
+                wlip.toPlainText = self.WLIPtext.toPlainText()
+                path.text = self.path.text()
+                blip.toPlainText = self.BLIPtext.toPlainText()
+                blipPath.text = self.bPath.text()
+                scanType.text = self.ScanType.currentText()
+                tree = xml.ElementTree(root)
+                tree.write(file, pretty_print=True)
+                file.close()
+        elif buttonName == "Import":
+            filename = button.text()
+            root = xml.parse(filename).getroot()
+            name = root.find("RunName")
+            description = root.find("RunDescription")
+            whitelist = root.find("TargetWhitelistIP")
+            path = root.find("WhitelistPath")
+            blacklist = root.find("TargetBlacklistIP")
+            path2 = root.find("BlacklistPath")
+            scanType = root.find("ScanType")
+
+            if name is not None:
+                self.runName.setText(name.text)
+            if description is not None:
+                self.runDesc.toPlainText()
+            if path is not None:
+                self.path.setText(path.text)
+            if whitelist is not None:
+                self.WLIPtext.toPlainText()
+            if blacklist is not None:
+                self.BLIPtext.toPlainText()
+            if path2 is not None:
+                self.bPath.setText(path2)
+            if scanType is not None:
+                self.ScanType.setText(scanType)
+
 
 
 
     def hide(self):
         self.runConfiguration.setVisible(False)
-        self.table.setVisible(False)
         self.toolImport.setVisible(False)
+        self.toolList.setVisible(False)
 
     def show(self):
         self.runConfiguration.setVisible(True)
-        self.table.setVisible(True)
         self.toolImport.setVisible(True)
+        self.toolList.setVisible(True)
 
