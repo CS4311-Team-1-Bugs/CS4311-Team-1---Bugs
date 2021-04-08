@@ -23,6 +23,7 @@ class RunSection():
         client = pymongo.MongoClient(
             "mongodb+srv://aaron:EDVsK1hnYHJEWZry@seacluster.f3vdv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
         db = client[ 'Test' ]
+        self.tools = db["Tools"]
         self.config = db[ "Run Config" ]
 
         # Title component of menu
@@ -58,7 +59,10 @@ class RunSection():
         # Whitelist
         self.WLIPtext = QPlainTextEdit()
         self.WLIPtext.setPlaceholderText("Whitelist IP Default")
-
+        file = "whitelistSample.txt"
+        filePath = file.format(os.getcwd())
+        sample = QLabel("<a href = {}>Open Sample Whitelist File</a>".format(filePath))
+        sample.setOpenExternalLinks(True)
         BrowseChoiceLayout = QHBoxLayout()
         BrowseChoiceLayout.addWidget(self.WLIPtext)
         BrowseChoiceLayout.addWidget(orLabel)
@@ -71,9 +75,14 @@ class RunSection():
         wlipBrowse.clicked.connect(lambda: self.buttons("Browse", self.path))
         BrowseWidget = QWidget()
         BrowseWidget.setLayout(BrowseChoiceLayout)
+        BrowseChoiceLayout.addWidget(sample)
 
         self.BLIPtext = QPlainTextEdit()
         self.BLIPtext.setPlaceholderText("Blacklist IP Default")
+        file2 = "blacklistSample.txt"
+        filePath2 = file2.format(os.getcwd())
+        sample2 = QLabel("<a href = {}>Open Sample Blacklist File</a>".format(filePath))
+        sample2.setOpenExternalLinks(True)
 
         BrowseChoiceLayout2 = QHBoxLayout()
         BrowseChoiceLayout2.addWidget(self.BLIPtext)
@@ -86,22 +95,18 @@ class RunSection():
         blipBrowse.clicked.connect(lambda: self.buttons("Browse", self.bPath))
         BrowseWidget2 = QWidget()
         BrowseWidget2.setLayout(BrowseChoiceLayout2)
-
+        BrowseChoiceLayout2.addWidget(sample2)
         runConfigLayout.addRow("Whitelisted IP Target:", BrowseWidget)
         runConfigLayout.addRow("Blacklisted IP Target:", BrowseWidget2)
 
-        ScanType = QComboBox()
-        scanList = [ "Scan Type", "Scan Type 1", "Scan Type 2 ", "Scan Type 3" ]
-        ScanType.addItems(scanList)
-        runConfigLayout.addRow("Scan Type:", ScanType)
-        runConfigLayout.addWidget(orLabel2)
-        self.ConfigFile = QLineEdit()
-        self.ConfigFile.setPlaceholderText("Run Configuration File")
-        runConfigLayout.addRow("Browse for Run Configuration File:", self.ConfigFile, )
-        configButton = QPushButton("Browse")
-        runConfigLayout.addWidget(configButton)
-        configButton.clicked.connect(lambda: self.buttons("Browse", self.ConfigFile))
-
+        self.ScanType = QComboBox()
+        scanList = [ ]
+        for x in self.tools.find({},{'_id':0,'Name':1}):
+            string = str(x)
+            string1 = string[10:len(string)-2]
+            scanList.append(string1)
+        self.ScanType.addItems(scanList)
+        runConfigLayout.addRow("Scan Type:", self.ScanType)
         buttonWidget = util.make_saveCancel(self)
 
         runConfigLayout.addWidget(buttonWidget)
@@ -113,10 +118,12 @@ class RunSection():
 
         self.runConfiguration = QDockWidget()
         self.runConfiguration.setTitleBarWidget(menuTitle)
+
         self.runConfiguration.setWidget(main)
         self.win.addDockWidget(Qt.RightDockWidgetArea, self.runConfiguration)
         self.runConfiguration.setVisible(False)
         return
+
 
     def edit(self):
         menuTitle = QLabel()
@@ -205,8 +212,10 @@ class RunSection():
             blipText = self.BLIPtext.toPlainText()
             blipFile = self.bPath.text()
             runFile = self.importFile.text()
+            scan = self.ScanType.currentText()
+
             inputStr = {"Run Name": name, "Run Description": description, "Target Whitelist": wlipText,
-                        "Whitelist File": wlipFile, "Target Blacklist": blipText, "Blacklist File": blipFile,
+                        "Whitelist File": wlipFile, "Target Blacklist": blipText, "Blacklist File": blipFile,"Scan Type":scan,
                         "Run Configuration File": runFile}
             self.config.insert_one(inputStr)
         elif "Cancel" in buttonName:
@@ -216,8 +225,7 @@ class RunSection():
             self.BLIPtext.setPlainText("")
             self.bPath.setText("")
             self.path.setText("")
-            self.ConfigFile.setText("")
-            self.importFile.text("")
+            self.importFile.setText("")
 
 
 
