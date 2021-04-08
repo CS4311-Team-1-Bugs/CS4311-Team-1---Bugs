@@ -145,6 +145,7 @@ class RunSection():
             self.path.setText("")
             self.ConfigFile.setText("")
 
+            
     def hide(self):
         self.runConfiguration.setVisible(False)
     def show(self):
