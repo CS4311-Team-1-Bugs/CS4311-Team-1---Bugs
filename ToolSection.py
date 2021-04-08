@@ -188,6 +188,9 @@ class ToolSection():
 
         hButton = QHBoxLayout()
         
+        self.dependencyCondition = QComboBox()
+        conditions = ["AND", "NOT", "NOR", "NAND"]
+        self.dependencyCondition.addItems(conditions)
         
         self.toolSelections = QComboBox()
         self.toolSelections.setModel(self.model)
@@ -207,7 +210,8 @@ class ToolSection():
         
         self.value = QLineEdit()
         
-        
+        hButton.addWidget(QLabel("Dependency Condition"))
+        hButton.addWidget(self.dependencyCondition)
         hButton.addWidget(QLabel("Tool Name"))
         hButton.addWidget(self.toolSelections)
         hButton.addWidget(QLabel("Output Specification"))
@@ -222,18 +226,15 @@ class ToolSection():
         hButtonHolder = QWidget()
         hButtonHolder.setLayout(hButton)
         add = QPushButton("ADD")
+        add.clicked.connect(lambda: self.buttons("AddDependency", None))
         layout.addWidget(hButtonHolder)
         layout.addWidget(util.make_HBox(add, 0))
 
-
-        depLayout = QHBoxLayout()
-        dep = QLineEdit()
-        depLayout.addWidget(QLabel("Dependency Expression"))
-        depLayout.addWidget(dep)
-        depLayout.addStretch()
-        depHolder = QWidget()
-        depHolder.setLayout(depLayout)
-        layout.addWidget(depHolder)
+        self.dependencies = QVBoxLayout() 
+        dependencyHolder = QWidget()
+        dependencyHolder.setLayout(self.dependencies)
+        
+        layout.addWidget(dependencyHolder)
 
         layoutHolder = QWidget()
         layoutHolder.setLayout(layout)
@@ -377,8 +378,11 @@ class ToolSection():
             else:
                 button.setText(str(fname))
         elif "Add" in buttonName:
-            label = button.text()
-            button.setText("")
+            if buttonName == "AddDependency":
+                label = "Condition: {}, Tool: {}, Output Specification: {}, Field Path: {}, Operator: {}, Value:{}".format(str(self.dependencyCondition.currentText()), str(self.toolSelections.currentText()), str(self.outputSelections.currentText()), self.path.text(), str(self.operator.currentText()), self.value.text())
+            else:
+                label = button.text()
+                button.setText("")
             # make layout to hold name and button
             hLayout = QHBoxLayout()
             addedLabel = QLabel(label)
@@ -394,12 +398,13 @@ class ToolSection():
                 self.options.addWidget(holder)
                 # set up removal button's button
                 removeButt.clicked.connect(lambda: self.buttons("Remove", label))
+            elif buttonName == "AddDependency":
+                self.dependencies.addWidget(holder)
+                removeButt.clicked.connect(lambda: self.buttons("RemoveDependency", label))
             else:
                 self.outputSpec.addWidget(holder)
                 # set up removal button's button
                 removeButt.clicked.connect(lambda: self.buttons("RemoveS", label))
-
-            button.setText("")
 
         elif "Remove" in buttonName:
             if buttonName == "Remove":
@@ -422,6 +427,13 @@ class ToolSection():
                             continue
                         if self.outputSpec.itemAt(i).widget().layout().itemAt(0).widget().text() == button:
                             self.outputSpec.itemAt(i).widget().setParent(None)
+                            return
+            elif buttonName == "RemoveDependency":
+                ret = self.dialogs("Dependency Removal", "Remove\n {} \nfrom the dependencies? ".format(button))
+                if ret == QMessageBox.Yes:
+                    for i in range(self.dependencies.count()):
+                        if self.dependencies.itemAt(i).widget().layout().itemAt(0).widget().text() == button:
+                            self.dependencies.itemAt(i).widget().setParent(None)
                             return
             else:
                 ret = self.dialogs("Tool Removal", "Remove the Selected Tool?")
