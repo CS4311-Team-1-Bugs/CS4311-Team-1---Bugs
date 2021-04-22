@@ -114,6 +114,10 @@ class RunSection():
         self.ScanType.addItems(scanList)
         runConfigLayout.addRow("Scan Type:", self.ScanType)
         buttonWidget = util.make_saveCancel(self,1)
+        
+        add = QPushButton("ADD")
+        add.clicked.connect(lambda: self.buttons("AddDependency", None))
+        runConfigLayout.addWidget(util.make_HBox(add, 0))
 
         runConfigLayout.addWidget(buttonWidget)
         runConfigLayout.setVerticalSpacing(20)
