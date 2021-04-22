@@ -19,6 +19,7 @@ class RunSection():
         self.run_config()
         self.edit()
         self.importFile()
+        self.make_scanTable()
 
 
     def run_config(self):
@@ -230,6 +231,109 @@ class RunSection():
         for i in range(1, self.tableWidget.rowCount()):
             self.tableWidget.verticalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
+    def make_scanTable(self):
+    
+        # Title component of menu
+        menuTitle = QLabel()
+        menuTitle.setText("  Scan List  ")
+        menuTitle.setFont(QFont("Times", 16))
+        menuTitle.setStyleSheet("background-color: #49d1e3")
+        menuTitle.setAlignment(Qt.AlignLeft)
+    
+        # Create Tool Content Details layer
+        self.scanTable = QTableWidget(1, 7)
+        self.scanTable.setColumnHidden(6, True)
+        self.scanTable.setEditTriggers(QTableWidget.NoEditTriggers)
+    
+        # column 1
+        col1Title = QLabel()
+        col1Title.setText("Scan Type")
+        self.ScanSort = "down"
+        nameSortButton = QToolButton()
+        nameSortButton.setArrowType(Qt.DownArrow)
+        nameSortButton.clicked.connect(lambda: self.buttons("Sort", nameSortButton))
+        col1Layout = QHBoxLayout()
+        col1Layout.addStretch()
+        col1Layout.addWidget(col1Title)
+        col1Layout.addWidget(nameSortButton)
+        col1Layout.addStretch()
+        
+        # column 1
+        col2Title = QLabel()
+        col2Title.setText("Execution#")
+        self.ExecSort = "down"
+        ExecSortButton = QToolButton()
+        ExecSortButton.setArrowType(Qt.DownArrow)
+        ExecSortButton.clicked.connect(lambda: self.buttons("Sort", nameSortButton))
+        col2Layout = QHBoxLayout()
+        col2Layout.addStretch()
+        col2Layout.addWidget(col2Title)
+        col2Layout.addWidget(ExecSortButton)
+        col2Layout.addStretch()
+    
+        # Set Columns for the table
+        col1Widget = QWidget()
+        col1Widget.setLayout(col1Layout)
+        col2Widget = QWidget()
+        col2Widget.setLayout(col2Layout)
+        self.scanTable.setCellWidget(0, 0, col1Widget)
+        self.scanTable.setCellWidget(0, 1, col2Widget)
+        self.scanTable.setCellWidget(0, 2, QLabel("Start"))
+        self.scanTable.setCellWidget(0, 3, QLabel("End"))
+        self.scanTable.setCellWidget(0, 4, QLabel("Status"))
+        self.scanTable.setCellWidget(0, 5, QLabel("Control"))
+        header = self.scanTable.horizontalHeader()
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        self.scanTable.verticalHeader().hide()
+        self.scanTable.horizontalHeader().hide()
+
+
+
+        self.ScanId = None
+        self.tabWidget = QTabWidget()
+        self.tabWidget.setTabPosition(QTabWidget.West)
+        self.tabWidget.addTab(QWidget(), "Sample")
+        
+        
+        mainLayout = QVBoxLayout()
+        mainLayout.addSpacing(10)
+        mainLayout.addWidget(self.scanTable)
+        mainLayout.addSpacing(10)
+        mainLayout.addWidget(self.tabWidget)
+        
+    
+        main = QWidget()
+        main.setLayout(mainLayout)
+    
+        #self.drawTable()
+    
+        self.scanList = QDockWidget()
+        self.scanList.setTitleBarWidget(menuTitle)
+        self.scanList.setWidget(main)
+        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.scanList)
+        self.scanList.setVisible(False)
+        
+        
+    
+    def draw_tabs(self): 
+        for i in range(self.tabWidget.count()): 
+                self.tabWidget.removeTab(0);
+        query = {"tool_id": self.ScanId}
+        outputs = self.outputDB.find(query)
+        for i in outputs: 
+            tab = QWidget()
+            layout = QVBoxLayout()
+            text = QLineEdit()
+            text.setEditable(false)
+            text.setText(i["Data"])
+            layout.addWidget(text)
+            tab.setLayout(layout)
+            self.tabWidget.addTab(tab, i["Specification"])
+            
+
 
     def importFile(self):
         # Title component of menu
@@ -277,7 +381,7 @@ class RunSection():
         self.toolImport = QDockWidget()
         self.toolImport.setTitleBarWidget(menuTitle)
         self.toolImport.setWidget(importContainer)
-        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.toolImport)
+        self.win.addDockWidget(Qt.RightDockWidgetArea, self.toolImport)
         self.toolImport.setVisible(False)
 
     def buttons(self, buttonName, button):
@@ -381,11 +485,13 @@ class RunSection():
         self.runConfiguration.setVisible(False)
         self.toolImport.setVisible(False)
         self.toolList.setVisible(False)
+        self.scanList.setVisible(False)
 
     def show(self):
         self.runConfiguration.setVisible(True)
-        self.toolImport.setVisible(False)
+        self.toolImport.setVisible(True)
         self.toolList.setVisible(True)
+        self.scanList.setVisible(True)
 
 
 
