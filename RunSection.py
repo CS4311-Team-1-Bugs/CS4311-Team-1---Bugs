@@ -5,12 +5,13 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import pymongo
 from bson.objectid import ObjectId
+import state
 import datetime
 import os
 import lxml.etree as xml
 import Utils as util
 from ToolSection import QTablePush
-
+import subprocess
 
 class RunSection():
     def __init__(self, window):
@@ -18,6 +19,7 @@ class RunSection():
         self.run_config()
         self.edit()
         self.importFile()
+
 
     def run_config(self):
 
@@ -27,6 +29,7 @@ class RunSection():
         db = client[ 'Test' ]
         self.tools = db["Tools"]
         self.config = db[ "Run Config" ]
+
 
         # Title component of menu
         menuTitle = QLabel()
@@ -194,7 +197,6 @@ class RunSection():
         index = 1
         tools = self.config.find()
         maxInd = self.config.count_documents({})
-
         if reversed:
             start, end, increment = maxInd - 1, -1, -1
         else:
@@ -211,8 +213,11 @@ class RunSection():
             Buttons = QWidget()
             ButtonLayout = QHBoxLayout()
             start = QTablePush(tool[ "_id" ], "play.png", self)
+            start.clicked.connect(lambda:self.buttons("Start",None))
             pause= QTablePush(tool[ "_id" ], "pause.png", self)
+            pause.clicked.connect(lambda:self.buttons("Pause",None))
             stop = QTablePush(tool[ "_id" ], "stop.png", self)
+            stop.clicked.connect(lambda:self.buttons("Stop",None))
             ButtonLayout.addWidget(start)
             ButtonLayout.addWidget(pause)
             ButtonLayout.addWidget(stop)
@@ -285,6 +290,14 @@ class RunSection():
                 button.setText(str(fname[ 0 ]))
             else:
                 button.setText(str(fname))
+        elif "Start" in buttonName:
+            start = self.dialogs("Starting Run", "Run has been started")
+            subprocess.call("/System/Applications/Chess.app/Contents/MacOS/Chess") # Call path of tool 
+        elif "Pause" in buttonName:
+            pause = self.dialogs("Pausing Run", "Run has been paused")
+        elif "Stop" in buttonName:
+            stop = self.dialogs("Stopping Run", "Run has been stopped")
+
         elif "Save" in buttonName:
             name = self.runName.text()
             description = self.runDesc.toPlainText()
@@ -299,6 +312,7 @@ class RunSection():
                         "Whitelist File": wlipFile, "Target Blacklist": blipText, "Blacklist File": blipFile,"Scan Type":scan,
                         "Run Configuration File": runFile}
             self.config.insert_one(inputStr)
+            self.drawTable()
         elif "Cancel" in buttonName:
             self.runName.setText("")
             self.runDesc.setPlainText("")
@@ -359,7 +373,9 @@ class RunSection():
                 self.ScanType.setText(scanType)
 
 
-
+    def dialogs(self, windowTitle, text):
+        ret = QMessageBox.information(self.win, windowTitle, text, QMessageBox.Yes | QMessageBox.Abort, QMessageBox.Abort)
+        return ret
 
     def hide(self):
         self.runConfiguration.setVisible(False)
@@ -368,6 +384,8 @@ class RunSection():
 
     def show(self):
         self.runConfiguration.setVisible(True)
-        self.toolImport.setVisible(True)
+        self.toolImport.setVisible(False)
         self.toolList.setVisible(True)
+
+
 
