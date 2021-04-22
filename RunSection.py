@@ -400,7 +400,7 @@ class RunSection():
                 button.setText(str(fname))
         elif "Start" in buttonName:
             start = self.dialogs("Starting Run", "Run has been started")
-            subprocess.call("/System/Applications/Chess.app/Contents/MacOS/Chess") # Call path of tool 
+            #subprocess.call("/System/Applications/Chess.app/Contents/MacOS/Chess") # Call path of tool 
         elif "Pause" in buttonName:
             pause = self.dialogs("Pausing Run", "Run has been paused")
         elif "Stop" in buttonName:
