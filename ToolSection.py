@@ -190,7 +190,7 @@ class ToolSection():
         hButton = QHBoxLayout()
         
         self.dependencyCondition = QComboBox()
-        conditions = ["AND", "NOT", "NOR", "NAND", "NONE"]
+        conditions = ["AND", "NOT", "NOR", "NAND"]
         self.dependencyCondition.addItems(conditions)
         
         self.toolSelections = QComboBox()
