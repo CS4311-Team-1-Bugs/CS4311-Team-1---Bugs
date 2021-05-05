@@ -10,8 +10,20 @@ import datetime
 import os
 import lxml.etree as xml
 import Utils as util
-from ToolSection import QTablePush
+#from ToolSection import QTablePush
 import subprocess
+
+
+class QTablePush(QPushButton):
+     def __init__(self, id, text, toolSection):
+        #init the window
+        super(QPushButton, self).__init__()
+        self.setIcon(QIcon(QPixmap(text)))
+        self.setIconSize(QSize(16,16))
+        self.id = str(id)
+        self.setToolTip(text[:-4])
+        self.section = toolSection
+        self.clicked.connect(lambda: self.section.buttons(text[:-4], self))
 
 class RunSection():
     def __init__(self, window):
@@ -30,6 +42,9 @@ class RunSection():
         db = client[ 'Test' ]
         self.tools = db["Tools"]
         self.config = db[ "Run Config" ]
+        self.scans = db["Scans"]
+        self.scanOutputs = db["scanOutput"]
+        
 
 
         # Title component of menu
@@ -114,10 +129,6 @@ class RunSection():
         self.ScanType.addItems(scanList)
         runConfigLayout.addRow("Scan Type:", self.ScanType)
         buttonWidget = util.make_saveCancel(self,1)
-        
-        add = QPushButton("ADD")
-        add.clicked.connect(lambda: self.buttons("AddDependency", None))
-        runConfigLayout.addWidget(util.make_HBox(add, 0))
 
         runConfigLayout.addWidget(buttonWidget)
         runConfigLayout.setVerticalSpacing(20)
@@ -312,26 +323,77 @@ class RunSection():
         main = QWidget()
         main.setLayout(mainLayout)
     
-        #self.drawTable()
+        self.drawScanTable()
     
         self.scanList = QDockWidget()
         self.scanList.setTitleBarWidget(menuTitle)
         self.scanList.setWidget(main)
         self.win.addDockWidget(Qt.LeftDockWidgetArea, self.scanList)
         self.scanList.setVisible(False)
+    
+    def drawScanTable(self, reversed = 0):
+        self.runID = "7"
+        query = {"Run_ID": self.runID}
+        table = self.scanTable
+        index = 1
+        scans = self.scans.find(query)
+        maxInd = self.scans.count_documents({})
         
+        if reversed:
+            start, end, increment = maxInd-1, -1, -1
+        else: 
+            start, end, increment = 0, maxInd, 1
+        for i in range(start, end, increment):
+            scan = scans[i]
+            if index < table.rowCount():
+                pass
+            else:
+                table.insertRow(index)
+            table.setCellWidget(index, 0, QLabel(scan[ "Name" ]))
+            table.setCellWidget(index, 1, QLabel(scan[ "Exec#" ]))
+            table.setCellWidget(index, 2, QLabel(scan[ "Start" ]))
+            table.setCellWidget(index, 3, QLabel(scan[ "End" ]))
+            table.setCellWidget(index, 4, QLabel(scan[ "Status" ]))
+            
+            Buttons = QWidget()
+            ButtonLayout = QHBoxLayout()
+            start = QTablePush(scan[ "_id" ], "play.png", self)
+            #start.clicked.connect(lambda:self.buttons("Start",None))
+            pause= QTablePush(scan[ "_id" ], "pause.png", self)
+            #pause.clicked.connect(lambda:self.buttons("Pause",None))
+            stop = QTablePush(scan[ "_id" ], "stop.png", self)
+            #stop.clicked.connect(lambda:self.buttons("Stop",None))
+            output = QTablePush(scan["_id"], "output.png", self)
+            ButtonLayout.addWidget(start)
+            ButtonLayout.addWidget(pause)
+            ButtonLayout.addWidget(stop)
+            ButtonLayout.addWidget(output)
+            Buttons.setLayout(ButtonLayout)
+            table.setCellWidget(index, 5, Buttons)
+            #table.setCellWidget(index, 2, QPushButton("Remove"))
+            table.setCellWidget(index, 6, QLabel(str(scan[ "_id" ])))
+            index += 1
+            
+        for i in range(1, self.scanTable.rowCount()):
+            self.scanTable.verticalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
+            
         
     
     def draw_tabs(self): 
         for i in range(self.tabWidget.count()): 
                 self.tabWidget.removeTab(0);
-        query = {"tool_id": self.ScanId}
-        outputs = self.outputDB.find(query)
+        print("here")
+        
+        query = {"tool_id": ObjectId(self.ScanId)}
+        outputs = self.scanOutputs.find(query)
+        print("just did the query")
+  
+        
         for i in outputs: 
+            print("found some")
             tab = QWidget()
             layout = QVBoxLayout()
             text = QLineEdit()
-            text.setEditable(false)
             text.setText(i["Data"])
             layout.addWidget(text)
             tab.setLayout(layout)
@@ -399,8 +461,61 @@ class RunSection():
             else:
                 button.setText(str(fname))
         elif "Start" in buttonName:
+            #since the id is not working then i need to just pretend that i do have it.
+            
+  #          self.config.find()
             start = self.dialogs("Starting Run", "Run has been started")
-            #subprocess.call("/System/Applications/Chess.app/Contents/MacOS/Chess") # Call path of tool 
+  #          print(self.config)
+            
+            sampleS = self.tools.find()
+            for i in sampleS:
+                 print(i)
+ #               print("_id", i['_id'])
+  #              print("toolname " ,i['Scan Type'])
+            
+
+            
+            #for testing
+            Id = ObjectId('60842f0f29a941469eca411b') 
+            path = r"C:/Program Files (x86)/Nmap" # this would be aquired from a query to the db instead
+            
+            
+            self.currid = Id
+            query = {"_id": Id}
+            matchingRun = self.config.find_one(query)
+    #        for runTools in matchingRun:  # i don't think i need this. 
+            whitelist = matchingRun['Target Whitelist']
+            whitelistFile = matchingRun['Whitelist File']
+            blacklist = matchingRun['Target Blacklist']
+            blacklistFile = matchingRun['Blacklist File']
+            print(matchingRun)
+            
+            query = {"Run_id": Id}
+            #toolquery ={"tool_id": ObjectId(self.ScanId)}
+            tooloutputs =self.tools.find(query)
+            
+            
+            if whitelist != None:
+                whitelistargs = f"-il {whitelist}"
+            else:
+                whitelistargs = f"{whitelist}"
+                # assemble blacklist args
+                
+                
+
+#            if blacklist != NULL:
+#                if isinstance(blacklist, file):
+#                    blacklistargs
+
+            argslist = f"{path} {whitelist}"
+            print( argslist)
+            p1 = subprocess.run([path, whitelist], capture_output =True )
+
+            print(p1.stderr)
+            print(p1.stdout.decode())
+            
+            
+            
         elif "Pause" in buttonName:
             pause = self.dialogs("Pausing Run", "Run has been paused")
         elif "Stop" in buttonName:
@@ -479,6 +594,11 @@ class RunSection():
                 self.bPath.setText(path2)
             if scanType is not None:
                 self.ScanType.setText(scanType)
+        elif buttonName == "output": 
+            self.ScanId = button.id
+            self.draw_tabs()
+            self.currRunRunning = 0;
+        
 
 
     def dialogs(self, windowTitle, text):
