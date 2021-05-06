@@ -192,10 +192,11 @@ class RunSection():
         # Add button
         addLayout = QHBoxLayout()
         addLayout.addStretch(1)
-        push = QPushButton("Add Tool")
-        push.setStyleSheet("background-color: #54e86c")
-        push.clicked.connect(lambda: self.buttons("Switcher", None))
-        addLayout.addWidget(push)
+        self.push = QPushButton("View Scan Ouput")
+        self.push.setStyleSheet("background-color: #54e86c")
+        self.currMode = 1
+        self.push.clicked.connect(lambda: self.buttons("Switcher", None))
+        addLayout.addWidget(self.push)
         holder = QWidget()
         holder.setLayout(addLayout)
 
@@ -598,6 +599,19 @@ class RunSection():
                 tree = xml.ElementTree(root)
                 tree.write(file, pretty_print=True)
                 file.close()
+        elif buttonName == "Switcher":
+            if self.currMode == 1:
+                self.currMode = 0
+                self.runConfiguration.setVisible(False)
+                self.toolImport.setVisible(False)
+                self.scanList.setVisible(True)
+                self.push.setText("Configure a Run")
+            else: 
+                self.currMode = 1
+                self.runConfiguration.setVisible(True)
+                self.toolImport.setVisible(True)
+                self.scanList.setVisible(False)
+                self.push.setText("View Scan Output")
         elif buttonName == "Import":
             filename = button.text()
             root = xml.parse(filename).getroot()
@@ -644,7 +658,9 @@ class RunSection():
         self.scanList.setVisible(False)
 
     def show(self):
-        self.runConfiguration.setVisible(True)
-        self.toolImport.setVisible(True)
+        if self.currMode == 1:
+            self.runConfiguration.setVisible(True)
+            self.toolImport.setVisible(True)
+        else: 
+            self.scanList.setVisible(True)
         self.toolList.setVisible(True)
-        self.scanList.setVisible(True)
