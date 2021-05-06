@@ -247,7 +247,7 @@ class RunSection():
                 table.insertRow(index)
             table.setCellWidget(index, 0, QLabel(tool[ "Run Name" ]))
             table.setCellWidget(index, 1, QLabel(tool[ "Run Description" ]))
-
+            table.setCellWidget(index, 2, QLabel(tool["Status"]))
             Buttons = QWidget()
             ButtonLayout = QHBoxLayout()
             start = QTablePush(tool[ "_id" ], "play.png", self)
