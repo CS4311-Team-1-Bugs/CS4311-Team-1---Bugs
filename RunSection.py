@@ -164,7 +164,7 @@ class RunSection():
         menuTitle.setAlignment(Qt.AlignLeft)
 
         self.tableWidget = QTableWidget(1, 4)
-        self.tableWidget.setColumnHidden(3, True)
+        self.tableWidget.setColumnHidden(4, True)
         self.tableWidget.setEditTriggers(QTableWidget.NoEditTriggers)
 
         col1Title = QLabel()
@@ -183,12 +183,14 @@ class RunSection():
         col1Widget = QWidget()
         col1Widget.setLayout(col1Layout)
         self.tableWidget.setCellWidget(0, 0, col1Widget)
-        self.tableWidget.setCellWidget(0, 1, QLabel("Description of Run"))
-        self.tableWidget.setCellWidget(0, 2, QLabel(" Scan "))
+        self.tableWidget.setCellWidget(0, 1, QLabel(" Description of Run "))
+        self.tableWidget.setCellWidget(0, 2, QLabel(" Status "))
+        self.tableWidget.setCellWidget(0, 3, QLabel(" Scan "))
         header = self.tableWidget.horizontalHeader()
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
         self.tableWidget.verticalHeader().hide()
         self.tableWidget.horizontalHeader().hide()
 
@@ -255,9 +257,9 @@ class RunSection():
             ButtonLayout.addWidget(stop)
             ButtonLayout.addWidget(output)
             Buttons.setLayout(ButtonLayout)
-            table.setCellWidget(index, 2, Buttons)
+            table.setCellWidget(index, 3, Buttons)
             # table.setCellWidget(index, 2, QPushButton("Remove"))
-            table.setCellWidget(index, 3, QLabel(str(tool[ "_id" ])))
+            table.setCellWidget(index, 4, QLabel(str(tool[ "_id" ])))
             index += 1
 
         for i in range(1, self.tableWidget.rowCount()):
@@ -505,21 +507,17 @@ class RunSection():
                 
             """
             # since the id is not working then i need to just pretend that i do have it.
-
             #          self.config.find()
             start = self.dialogs("Starting Run", "Run has been started")
             #          print(self.config)
-
             sampleS = self.tools.find()
             for i in sampleS:
                 print(i)
             #               print("_id", i['_id'])
             #              print("toolname " ,i['Scan Type'])
-
             # for testing
             Id = ObjectId('60842f0f29a941469eca411b')
             path = r"C:/Program Files (x86)/Nmap"  # this would be aquired from a query to the db instead
-
             self.currid = Id
             query = {"_id": Id}
             matchingRun = self.config.find_one(query)
@@ -529,25 +527,20 @@ class RunSection():
             blacklist = matchingRun[ 'Target Blacklist' ]
             blacklistFile = matchingRun[ 'Blacklist File' ]
             print(matchingRun)
-
             query = {"Run_id": Id}
             # toolquery ={"tool_id": ObjectId(self.ScanId)}
             tooloutputs = self.tools.find(query)
-
             if whitelist != None:
                 whitelistargs = f"-il {whitelist}"
             else:
                 whitelistargs = f"{whitelist}"
                 # assemble blacklist args
-
             #            if blacklist != NULL:
             #                if isinstance(blacklist, file):
             #                    blacklistargs
-
             argslist = f"{path} {whitelist}"
             print(argslist)
             p1 = subprocess.run([ path, whitelist ], capture_output=True)
-
             print(p1.stderr)
             print(p1.stdout.decode())
             """
