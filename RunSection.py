@@ -12,6 +12,7 @@ import lxml.etree as xml
 import Utils as util
 # from ToolSection import QTablePush
 import subprocess
+import psutil
 
 
 class QTablePush(QPushButton):
@@ -33,7 +34,8 @@ class RunSection():
         self.edit()
         self.importFile()
         self.make_scanTable()
-
+        self.runningRun = None
+        self.processes = list()
     def run_config(self):
 
         # Establish Connection to MongoDB - Run Config
@@ -44,6 +46,7 @@ class RunSection():
         self.config = db[ "Runs" ]
         self.scans = db[ "Scans" ]
         self.scanOutputs = db[ "scanOutput" ]
+        self.optionsDB = db["Options"]
 
         # Title component of menu
         menuTitle = QLabel()
@@ -394,14 +397,16 @@ class RunSection():
         for i in range(self.tabWidget.count()):
             self.tabWidget.removeTab(0);
 
-        query = {"tool_id": ObjectId(self.ScanId)}
+        query = {"Scan_id": ObjectId(self.ScanId)}
         outputs = self.scanOutputs.find(query)
 
         for i in outputs:
             tab = QWidget()
             layout = QVBoxLayout()
-            text = QLineEdit()
-            text.setText(i[ "Data" ])
+            text = QTextEdit()
+            text.insertPlainText(i[ "Data" ])
+            text.setReadOnly(True)
+            
             layout.addWidget(text)
             tab.setLayout(layout)
             self.tabWidget.addTab(tab, i[ "Specification" ])
@@ -456,6 +461,8 @@ class RunSection():
         self.toolImport.setVisible(False)
 
     def buttons(self, buttonName, button):
+        #Check if there's new output
+        self.check_processes()
         if "Browse" in buttonName:
             if buttonName == "Browse":
                 fname = QFileDialog.getExistingDirectory(None, "Select a Directory...")
@@ -465,7 +472,38 @@ class RunSection():
                 button.setText(str(fname[ 0 ]))
             else:
                 button.setText(str(fname))
-        elif "Start" in buttonName:
+        elif "play" in buttonName:
+            print("Here in start area")
+            if self.runningRun is None:
+                run_query = {"_id": ObjectId(button.id)}
+                run = self.config.find_one(run_query)
+                scan_query = {"Run_id": run["_id"]}
+                for scan in self.scans.find(scan_query):
+                    
+                    print(scan)
+                    tool_query = {"_id": scan["Tool_id"]}
+                    tool = self.tools.find_one(tool_query)
+                    
+                    argumentList = list()
+                    pathStr = """{}/{}""".format(tool["Path"], tool["Name"])
+                    print(pathStr)
+                    argumentList.append(pathStr)
+                    argument_query = {"Tool_id": tool["_id"]}
+                    arguments = self.optionsDB.find(argument_query)
+                    for i in arguments:
+                        argumentList.append(i["Option"])
+                        
+                    print(argumentList)
+                    #Need to put arguments in the outputdatabase
+                    inserter = {"Scan_id": scan["_id"], "Specification": "Tool Arguments", "Data": self.toString(argumentList)}
+                    self.scanOutputs.insert_one(inserter)
+                    self.processes.append([scan["_id"], 0, subprocess.Popen(argumentList, stdout = subprocess.PIPE)])
+            else: 
+                run_query = {"_id": self.runningRun}
+                run = self.config.find_one(run_query)
+                self.dialogs("Unable to execute Run", "Unable to execute requested run. Run {} is still in progress".format(run["Run Name"]), 1)
+                
+            """
             # since the id is not working then i need to just pretend that i do have it.
 
             #          self.config.find()
@@ -512,6 +550,7 @@ class RunSection():
 
             print(p1.stderr)
             print(p1.stdout.decode())
+            """
 
         elif buttonName == "Remove":
             ret = self.dialogs("Scan Type Removal", "Remove {} from the selected scans?".format(button))
@@ -543,10 +582,10 @@ class RunSection():
 
         elif "Save" in buttonName:
             name = self.runName.text()
-            description = self.runDesc.toPlainText()
-            wlipText = self.WLIPtext.toPlainText()
+            description = self.runDesc.text()
+            wlipText = self.WLIPtext.text()
             wlipFile = self.path.text()
-            blipText = self.BLIPtext.toPlainText()
+            blipText = self.BLIPtext.text()
             blipFile = self.bPath.text()
             runFile = self.importFile.text()
 
@@ -645,12 +684,61 @@ class RunSection():
                 self.RunId = button.id
                 self.ScanId = None
                 self.drawScanTable()
-
-    def dialogs(self, windowTitle, text):
-        ret = QMessageBox.information(self.win, windowTitle, text, QMessageBox.Yes | QMessageBox.Abort,
+    def check_processes(self): 
+        print("Checking processes")
+        for i in reversed(range(len(self.processes))):
+            if self.processes[i][1] == 1: 
+                print("Paused status")
+                continue
+            else: 
+                print(len(self.processes))
+                print(self.processes[i][2])
+                poll = self.processes[i][2].poll()
+                print(poll)
+                #Still running, ignore
+                if poll is None: 
+                    print("Still running")
+                    try:
+                        out, err = self.processes[i][2].communicate(timeout = 1)
+                        if err is None: 
+                            err = b" No Errors"
+                        self.handleOutput(self.processes[i][0],str(out.decode("utf-8")), str(err.decode("utf-8")))
+                        self.processes.pop(i)
+                    except: 
+                        pass    
+                    continue
+                else: 
+                    #Give output to output handler
+                    print("Output will be handled")
+                    out, err = self.processes[i][2].communicate()
+                    if err is None: 
+                        err = b"No Errors"
+                    self.handleOutput(self.processes[i][0],str(out.decode("utf-8")), str(err.decode("utf-8")))
+                    self.processes.pop(i)
+        if len(self.processes) < 1: 
+            print("Now empty")
+            self.runningRun = None
+                    
+    #Inserts Data Into the output section
+    def handleOutput(self, scan_id, output, errors):
+        print("Gonna Insert the Data!")
+        inserter1 = {"Scan_id": scan_id, "Specification": "General Output", "Data": output}
+        inserter2 = {"Scan_id": scan_id, "Specification": "Errors", "Data": errors}
+        self.scanOutputs.insert_one(inserter1)
+        self.scanOutputs.insert_one(inserter2)
+    def dialogs(self, windowTitle, text, option= 0):
+        if option == 0:
+            ret = QMessageBox.information(self.win, windowTitle, text, QMessageBox.Yes | QMessageBox.Abort,
                                       QMessageBox.Abort)
+        else: 
+            ret = QMessageBox.information(self.win, windowTitle, text, QMessageBox.Ok)
         return ret
-
+    #makes arguments go to string so it can be viewed in the gui
+    def toString(self, arguments):
+        baseStr = "Tool Path and command: {}\n".format(arguments[0])
+        for i in arguments[1:]: 
+            baseStr = baseStr + "{}\n".format(i)
+        return baseStr
     def hide(self):
         self.runConfiguration.setVisible(False)
         self.toolImport.setVisible(False)
