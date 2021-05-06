@@ -10,20 +10,21 @@ import datetime
 import os
 import lxml.etree as xml
 import Utils as util
-#from ToolSection import QTablePush
+# from ToolSection import QTablePush
 import subprocess
 
 
 class QTablePush(QPushButton):
-     def __init__(self, id, text, toolSection):
-        #init the window
+    def __init__(self, id, text, toolSection):
+        # init the window
         super(QPushButton, self).__init__()
         self.setIcon(QIcon(QPixmap(text)))
-        self.setIconSize(QSize(16,16))
+        self.setIconSize(QSize(16, 16))
         self.id = str(id)
-        self.setToolTip(text[:-4])
+        self.setToolTip(text[ :-4 ])
         self.section = toolSection
-        self.clicked.connect(lambda: self.section.buttons(text[:-4], self))
+        self.clicked.connect(lambda: self.section.buttons(text[ :-4 ], self))
+
 
 class RunSection():
     def __init__(self, window):
@@ -33,19 +34,16 @@ class RunSection():
         self.importFile()
         self.make_scanTable()
 
-
     def run_config(self):
 
         # Establish Connection to MongoDB - Run Config
         client = pymongo.MongoClient(
             "mongodb+srv://aaron:EDVsK1hnYHJEWZry@seacluster.f3vdv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
         db = client[ 'Test' ]
-        self.tools = db["Tools"]
-        self.config = db[ "Runs"]
-        self.scans = db["Scans"]
-        self.scanOutputs = db["scanOutput"]
-        
-
+        self.tools = db[ "Tools" ]
+        self.config = db[ "Runs" ]
+        self.scans = db[ "Scans" ]
+        self.scanOutputs = db[ "scanOutput" ]
 
         # Title component of menu
         menuTitle = QLabel()
@@ -73,12 +71,12 @@ class RunSection():
         runConfigLayout.addRow("Run Name:", self.runName)
 
         # Run Description
-        self.runDesc = QPlainTextEdit()
+        self.runDesc = QLineEdit()
         self.runDesc.setPlaceholderText("Run Description Default")
         runConfigLayout.addRow("Run Description:", self.runDesc)
 
         # Whitelist
-        self.WLIPtext = QPlainTextEdit()
+        self.WLIPtext = QLineEdit()
         self.WLIPtext.setPlaceholderText("Whitelist IP Default")
         file = "whitelistSample.txt"
         filePath = file.format(os.getcwd())
@@ -98,7 +96,7 @@ class RunSection():
         BrowseWidget.setLayout(BrowseChoiceLayout)
         BrowseChoiceLayout.addWidget(sample)
 
-        self.BLIPtext = QPlainTextEdit()
+        self.BLIPtext = QLineEdit()
         self.BLIPtext.setPlaceholderText("Blacklist IP Default")
         file2 = "blacklistSample.txt"
         filePath2 = file2.format(os.getcwd())
@@ -122,7 +120,7 @@ class RunSection():
 
         self.scanChoices = QVBoxLayout()
         self.scanType = QComboBox()
-        
+
         scanUpdate = QHBoxLayout()
         scanUpdate.addWidget(self.scanType)
         adder = QPushButton()
@@ -133,13 +131,12 @@ class RunSection():
         self.update_ScanTypes()
         updateHolder = QWidget()
         updateHolder.setLayout(scanUpdate)
-        
-        
+
         self.scanChoices.addWidget(updateHolder)
         scanHolder = QWidget()
         scanHolder.setLayout(self.scanChoices)
         runConfigLayout.addRow("Scan Type(s):", scanHolder)
-        buttonWidget = util.make_saveCancel(self,1)
+        buttonWidget = util.make_saveCancel(self, 1)
 
         runConfigLayout.addWidget(buttonWidget)
         runConfigLayout.setVerticalSpacing(20)
@@ -156,7 +153,6 @@ class RunSection():
         self.runConfiguration.setVisible(False)
         return
 
-
     def edit(self):
         menuTitle = QLabel()
         menuTitle.setText("  Run Table  ")
@@ -164,12 +160,12 @@ class RunSection():
         menuTitle.setStyleSheet("background-color: #49d1e3")
         menuTitle.setAlignment(Qt.AlignLeft)
 
-        self.tableWidget = QTableWidget(1,4)
-        self.tableWidget.setColumnHidden(3,True)
+        self.tableWidget = QTableWidget(1, 4)
+        self.tableWidget.setColumnHidden(3, True)
         self.tableWidget.setEditTriggers(QTableWidget.NoEditTriggers)
 
         col1Title = QLabel()
-        col1Title.setText("Run Configuration Name")
+        col1Title.setText("Run Name")
         self.sortArrow = "down"
         nameSortButton = QToolButton()
         nameSortButton.setArrowType(Qt.DownArrow)
@@ -218,13 +214,13 @@ class RunSection():
         self.toolList.setWidget(main)
         self.win.addDockWidget(Qt.RightDockWidgetArea, self.toolList)
         self.toolList.setVisible(False)
+
     def update_ScanTypes(self):
-        self.scanList = []
+        self.scanList = [ ]
         for x in self.tools.find():
-            self.scanList.append(x["Name"])
+            self.scanList.append(x[ "Name" ])
         self.scanType.addItems(self.scanList)
-        
-        
+
     def drawTable(self, reversed=0):
         table = self.tableWidget
         index = 1
@@ -247,9 +243,9 @@ class RunSection():
             Buttons = QWidget()
             ButtonLayout = QHBoxLayout()
             start = QTablePush(tool[ "_id" ], "play.png", self)
-            pause= QTablePush(tool[ "_id" ], "pause.png", self)
+            pause = QTablePush(tool[ "_id" ], "pause.png", self)
             stop = QTablePush(tool[ "_id" ], "stop.png", self)
-            output = QTablePush(tool["_id"], "output2.png", self)
+            output = QTablePush(tool[ "_id" ], "output2.png", self)
             ButtonLayout.addWidget(start)
             ButtonLayout.addWidget(pause)
             ButtonLayout.addWidget(stop)
@@ -264,19 +260,19 @@ class RunSection():
             self.tableWidget.verticalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
     def make_scanTable(self):
-    
+
         # Title component of menu
         menuTitle = QLabel()
         menuTitle.setText("  Scan List  ")
         menuTitle.setFont(QFont("Times", 16))
         menuTitle.setStyleSheet("background-color: #49d1e3")
         menuTitle.setAlignment(Qt.AlignLeft)
-    
+
         # Create Tool Content Details layer
         self.scanTable = QTableWidget(1, 7)
         self.scanTable.setColumnHidden(6, True)
         self.scanTable.setEditTriggers(QTableWidget.NoEditTriggers)
-    
+
         # column 1
         col1Title = QLabel()
         col1Title.setText("Scan Type")
@@ -289,7 +285,7 @@ class RunSection():
         col1Layout.addWidget(col1Title)
         col1Layout.addWidget(nameSortButton)
         col1Layout.addStretch()
-        
+
         # column 1
         col2Title = QLabel()
         col2Title.setText("Execution#")
@@ -302,7 +298,7 @@ class RunSection():
         col2Layout.addWidget(col2Title)
         col2Layout.addWidget(ExecSortButton)
         col2Layout.addStretch()
-    
+
         # Set Columns for the table
         col1Widget = QWidget()
         col1Widget.setLayout(col1Layout)
@@ -322,100 +318,92 @@ class RunSection():
         self.scanTable.verticalHeader().hide()
         self.scanTable.horizontalHeader().hide()
 
-
-
         self.ScanId = None
         self.tabWidget = QTabWidget()
         self.tabWidget.setTabPosition(QTabWidget.West)
         self.tabWidget.addTab(QWidget(), "Sample")
-        
-        
+
         mainLayout = QVBoxLayout()
         mainLayout.addSpacing(10)
         mainLayout.addWidget(self.scanTable)
         mainLayout.addSpacing(10)
         mainLayout.addWidget(self.tabWidget)
-        
-    
+
         main = QWidget()
         main.setLayout(mainLayout)
-    
+
         self.drawScanTable()
-    
+
         self.scanList = QDockWidget()
         self.scanList.setTitleBarWidget(menuTitle)
         self.scanList.setWidget(main)
         self.win.addDockWidget(Qt.LeftDockWidgetArea, self.scanList)
         self.scanList.setVisible(False)
-    
-    def drawScanTable(self, reversed = 0):
-        if self.RunId is not None: 
+
+    def drawScanTable(self, reversed=0):
+        if self.RunId is not None:
             print("here")
             query = {"Run_id": ObjectId(self.RunId)}
             table = self.scanTable
             index = 1
             scans = self.scans.find(query)
             maxInd = self.scans.count_documents({})
-            
+
             if reversed:
-                start, end, increment = maxInd-1, -1, -1
-            else: 
+                start, end, increment = maxInd - 1, -1, -1
+            else:
                 start, end, increment = 0, maxInd, 1
             for i in range(start, end, increment):
-                scan = scans[i]
+                scan = scans[ i ]
                 if index < table.rowCount():
                     pass
                 else:
                     table.insertRow(index)
-                tool_query = {"_id": scan["Tool_id"]}
-                name = self.tools.find_one(tool_query)["Name"]
+                tool_query = {"_id": scan[ "Tool_id" ]}
+                name = self.tools.find_one(tool_query)[ "Name" ]
                 table.setCellWidget(index, 0, QLabel(name))
                 table.setCellWidget(index, 1, QLabel(scan[ "Exec#" ]))
                 table.setCellWidget(index, 2, QLabel(scan[ "Start" ]))
                 table.setCellWidget(index, 3, QLabel(scan[ "End" ]))
                 table.setCellWidget(index, 4, QLabel(scan[ "Status" ]))
-                
+
                 Buttons = QWidget()
                 ButtonLayout = QHBoxLayout()
                 start = QTablePush(scan[ "_id" ], "play.png", self)
-                #start.clicked.connect(lambda:self.buttons("Start",None))
-                pause= QTablePush(scan[ "_id" ], "pause.png", self)
-                #pause.clicked.connect(lambda:self.buttons("Pause",None))
+                # start.clicked.connect(lambda:self.buttons("Start",None))
+                pause = QTablePush(scan[ "_id" ], "pause.png", self)
+                # pause.clicked.connect(lambda:self.buttons("Pause",None))
                 stop = QTablePush(scan[ "_id" ], "stop.png", self)
-                #stop.clicked.connect(lambda:self.buttons("Stop",None))
-                output = QTablePush(scan["_id"], "output.png", self)
+                # stop.clicked.connect(lambda:self.buttons("Stop",None))
+                output = QTablePush(scan[ "_id" ], "output.png", self)
                 ButtonLayout.addWidget(start)
                 ButtonLayout.addWidget(pause)
                 ButtonLayout.addWidget(stop)
                 ButtonLayout.addWidget(output)
                 Buttons.setLayout(ButtonLayout)
                 table.setCellWidget(index, 5, Buttons)
-                #table.setCellWidget(index, 2, QPushButton("Remove"))
+                # table.setCellWidget(index, 2, QPushButton("Remove"))
                 table.setCellWidget(index, 6, QLabel(str(scan[ "_id" ])))
                 index += 1
-                
+
             for i in range(1, self.scanTable.rowCount()):
                 self.scanTable.verticalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
-            
-        
-    
-    def draw_tabs(self): 
-        for i in range(self.tabWidget.count()): 
-                self.tabWidget.removeTab(0);
-        
+
+    def draw_tabs(self):
+        for i in range(self.tabWidget.count()):
+            self.tabWidget.removeTab(0);
+
         query = {"tool_id": ObjectId(self.ScanId)}
         outputs = self.scanOutputs.find(query)
-        
-        for i in outputs: 
+
+        for i in outputs:
             tab = QWidget()
             layout = QVBoxLayout()
             text = QLineEdit()
-            text.setText(i["Data"])
+            text.setText(i[ "Data" ])
             layout.addWidget(text)
             tab.setLayout(layout)
-            self.tabWidget.addTab(tab, i["Specification"])
-            
-
+            self.tabWidget.addTab(tab, i[ "Specification" ])
 
     def importFile(self):
         # Title component of menu
@@ -477,67 +465,62 @@ class RunSection():
             else:
                 button.setText(str(fname))
         elif "Start" in buttonName:
-            #since the id is not working then i need to just pretend that i do have it.
-            
-  #          self.config.find()
+            # since the id is not working then i need to just pretend that i do have it.
+
+            #          self.config.find()
             start = self.dialogs("Starting Run", "Run has been started")
-  #          print(self.config)
-            
+            #          print(self.config)
+
             sampleS = self.tools.find()
             for i in sampleS:
-                 print(i)
- #               print("_id", i['_id'])
-  #              print("toolname " ,i['Scan Type'])
-            
+                print(i)
+            #               print("_id", i['_id'])
+            #              print("toolname " ,i['Scan Type'])
 
-            
-            #for testing
-            Id = ObjectId('60842f0f29a941469eca411b') 
-            path = r"C:/Program Files (x86)/Nmap" # this would be aquired from a query to the db instead
-            
-            
+            # for testing
+            Id = ObjectId('60842f0f29a941469eca411b')
+            path = r"C:/Program Files (x86)/Nmap"  # this would be aquired from a query to the db instead
+
             self.currid = Id
             query = {"_id": Id}
             matchingRun = self.config.find_one(query)
-    #        for runTools in matchingRun:  # i don't think i need this. 
-            whitelist = matchingRun['Target Whitelist']
-            whitelistFile = matchingRun['Whitelist File']
-            blacklist = matchingRun['Target Blacklist']
-            blacklistFile = matchingRun['Blacklist File']
+            #        for runTools in matchingRun:  # i don't think i need this.
+            whitelist = matchingRun[ 'Target Whitelist' ]
+            whitelistFile = matchingRun[ 'Whitelist File' ]
+            blacklist = matchingRun[ 'Target Blacklist' ]
+            blacklistFile = matchingRun[ 'Blacklist File' ]
             print(matchingRun)
-            
+
             query = {"Run_id": Id}
-            #toolquery ={"tool_id": ObjectId(self.ScanId)}
-            tooloutputs =self.tools.find(query)
-            
-            
+            # toolquery ={"tool_id": ObjectId(self.ScanId)}
+            tooloutputs = self.tools.find(query)
+
             if whitelist != None:
                 whitelistargs = f"-il {whitelist}"
             else:
                 whitelistargs = f"{whitelist}"
                 # assemble blacklist args
-                
 
-#            if blacklist != NULL:
-#                if isinstance(blacklist, file):
-#                    blacklistargs
+            #            if blacklist != NULL:
+            #                if isinstance(blacklist, file):
+            #                    blacklistargs
 
             argslist = f"{path} {whitelist}"
-            print( argslist)
-            p1 = subprocess.run([path, whitelist], capture_output =True )
+            print(argslist)
+            p1 = subprocess.run([ path, whitelist ], capture_output=True)
 
             print(p1.stderr)
             print(p1.stdout.decode())
-            
+
         elif buttonName == "Remove":
             ret = self.dialogs("Scan Type Removal", "Remove {} from the selected scans?".format(button))
             if ret == QMessageBox.Yes:
-                    for i in range(1, self.scanChoices.count()):
-                        if self.scanChoices.itemAt(i).widget().layout().itemAt(0).widget().text() == button:
-                            print("match at ", i)
-                            self.scanChoices.itemAt(i).widget().setParent(None)
-                            return
-        elif buttonName == "AddScan": 
+                for i in range(1, self.scanChoices.count()):
+                    if self.scanChoices.itemAt(i).widget().layout().itemAt(0).widget().text() == button:
+                        print("match at ", i)
+                        self.scanChoices.itemAt(i).widget().setParent(None)
+                        return
+        elif buttonName == "AddScan":
             choice = str(self.scanType.currentText())
             # make layout to hold name and button
             hLayout = QHBoxLayout()
@@ -571,14 +554,15 @@ class RunSection():
                         "Run Configuration File": runFile, "Status": "Configured"}
             runid = self.config.insert(inputStr)
             print(runid)
-            for i in range(1,self.scanChoices.count()):
+            for i in range(1, self.scanChoices.count()):
                 scanQuery = {"Name": str(self.scanChoices.itemAt(i).widget().layout().itemAt(0).widget().text())}
                 tool = self.tools.find_one(scanQuery)
                 print(tool)
-                tool_id = tool["_id"]
-                inputScan = {"Tool_id": tool_id, "Exec#": "7", "Run_id": runid, "Start": "n/a", "End": "n/a", "Status": "Configured"}
+                tool_id = tool[ "_id" ]
+                inputScan = {"Tool_id": tool_id, "Exec#": "7", "Run_id": runid, "Start": "n/a", "End": "n/a",
+                             "Status": "Configured"}
                 z = self.scans.insert_one(inputScan)
-            for i in reversed(range(1,self.scanChoices.count())): 
+            for i in reversed(range(1, self.scanChoices.count())):
                 self.scanChoices.itemAt(i).widget().setParent(None)
             self.drawTable()
         elif "Cancel" in buttonName:
@@ -598,11 +582,11 @@ class RunSection():
 
                 name = xml.SubElement(root, "RunName")
                 desc = xml.SubElement(root, "RunDescription")
-                wlip = xml.SubElement(root,"TargetWhitelistIP")
+                wlip = xml.SubElement(root, "TargetWhitelistIP")
                 path = xml.SubElement(root, "WhitelistPath")
-                blip = xml.SubElement(root,"TargetBlacklistIP")
+                blip = xml.SubElement(root, "TargetBlacklistIP")
                 blipPath = xml.SubElement(root, "BlacklistPath")
-                scanType = xml.SubElement(root,"ScanType")
+                scanType = xml.SubElement(root, "ScanType")
 
                 name.text = self.runName.text()
                 desc.toPlainText = self.runDesc.toPlainText()
@@ -643,15 +627,14 @@ class RunSection():
             if buttonName == "output":
                 self.ScanId = button.id
                 self.draw_tabs()
-            else: 
+            else:
                 self.RunId = button.id
                 self.ScanId = None
                 self.drawScanTable()
-        
-
 
     def dialogs(self, windowTitle, text):
-        ret = QMessageBox.information(self.win, windowTitle, text, QMessageBox.Yes | QMessageBox.Abort, QMessageBox.Abort)
+        ret = QMessageBox.information(self.win, windowTitle, text, QMessageBox.Yes | QMessageBox.Abort,
+                                      QMessageBox.Abort)
         return ret
 
     def hide(self):
