@@ -120,14 +120,25 @@ class RunSection():
         runConfigLayout.addRow("Whitelisted IP Target:", BrowseWidget)
         runConfigLayout.addRow("Blacklisted IP Target:", BrowseWidget2)
 
-        self.ScanType = QComboBox()
-        scanList = [ ]
-        for x in self.tools.find({},{'_id':0,'Name':1}):
-            string = str(x)
-            string1 = string[10:len(string)-2]
-            scanList.append(string1)
-        self.ScanType.addItems(scanList)
-        runConfigLayout.addRow("Scan Type:", self.ScanType)
+        self.scanChoices = QVBoxLayout()
+        self.scanType = QComboBox()
+        
+        scanUpdate = QHBoxLayout()
+        scanUpdate.addWidget(self.scanType)
+        adder = QPushButton()
+        adder.setText("Add")
+        scanUpdate.addWidget(adder)
+        scanUpdate.addStretch()
+        adder.clicked.connect(lambda: self.buttons("AddScan", adder))
+        self.update_ScanTypes()
+        updateHolder = QWidget()
+        updateHolder.setLayout(scanUpdate)
+        
+        
+        self.scanChoices.addWidget(updateHolder)
+        scanHolder = QWidget()
+        scanHolder.setLayout(self.scanChoices)
+        runConfigLayout.addRow("Scan Type(s):", scanHolder)
         buttonWidget = util.make_saveCancel(self,1)
 
         runConfigLayout.addWidget(buttonWidget)
@@ -207,7 +218,13 @@ class RunSection():
         self.toolList.setWidget(main)
         self.win.addDockWidget(Qt.LeftDockWidgetArea, self.toolList)
         self.toolList.setVisible(False)
-
+    def update_ScanTypes(self):
+        self.scanList = []
+        for x in self.tools.find():
+            self.scanList.append(x["Name"])
+        self.scanType.addItems(self.scanList)
+        
+        
     def drawTable(self, reversed=0):
         table = self.tableWidget
         index = 1
@@ -382,15 +399,11 @@ class RunSection():
     def draw_tabs(self): 
         for i in range(self.tabWidget.count()): 
                 self.tabWidget.removeTab(0);
-        print("here")
         
         query = {"tool_id": ObjectId(self.ScanId)}
         outputs = self.scanOutputs.find(query)
-        print("just did the query")
-  
         
         for i in outputs: 
-            print("found some")
             tab = QWidget()
             layout = QVBoxLayout()
             text = QLineEdit()
@@ -514,8 +527,29 @@ class RunSection():
             print(p1.stderr)
             print(p1.stdout.decode())
             
-            
-            
+        elif buttonName == "Remove":
+            ret = self.dialogs("Scan Type Removal", "Remove {} from the selected scans?".format(button))
+            if ret == QMessageBox.Yes:
+                    for i in range(1, self.scanChoices.count()):
+                        if self.scanChoices.itemAt(i).widget().layout().itemAt(0).widget().text() == button:
+                            print("match at ", i)
+                            self.scanChoices.itemAt(i).widget().setParent(None)
+                            return
+        elif buttonName == "AddScan": 
+            choice = str(self.scanType.currentText())
+            # make layout to hold name and button
+            hLayout = QHBoxLayout()
+            addedLabel = QLabel(choice)
+            removeButt = QPushButton("Remove")
+            hLayout.addWidget(addedLabel)
+            hLayout.addWidget(removeButt)
+
+            # make a holder
+            holder = QWidget()
+            holder.setLayout(hLayout)
+            # add it
+            self.scanChoices.addWidget(holder)
+            removeButt.clicked.connect(lambda: self.buttons("Remove", choice))
         elif "Pause" in buttonName:
             pause = self.dialogs("Pausing Run", "Run has been paused")
         elif "Stop" in buttonName:
