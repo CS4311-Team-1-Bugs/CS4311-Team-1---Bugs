@@ -33,6 +33,7 @@ class RunSection():
         self.win = window
         self.run_config()
         self.edit()
+        self.report()
         self.importFile()
         self.make_scanTable()
         self.runningRun = None
@@ -157,6 +158,114 @@ class RunSection():
         self.runConfiguration.setVisible(False)
         return
 
+     def report(self):
+        client = pymongo.MongoClient(
+            "mongodb+srv://aaron:EDVsK1hnYHJEWZry@seacluster.f3vdv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+        db = client[ 'Test' ]
+        self.tools = db[ "Tools" ]
+        self.config = db[ "Runs" ]
+        self.scans = db[ "Scans" ]
+        self.scanOutputs = db[ "scanOutput" ]
+        self.optionsDB = db[ "Options" ]
+
+        # Title component of menu
+        menuTitle = QLabel()
+        menuTitle.setText("  XML Report  ")
+        menuTitle.setFont(QFont("Times", 16))
+        menuTitle.setStyleSheet("background-color: #49d1e3")
+        menuTitle.setAlignment(Qt.AlignLeft)
+        outerLayout = QVBoxLayout()
+
+        reportLayer = QFormLayout()
+        orLabel = util.orLabel()
+        orLabel1 = util.orLabel()
+        orLabel2 = util.orLabel()
+
+        main = QWidget()
+        main.setLayout(reportLayer)
+
+        self.reportName = QLineEdit()
+        reportLayer.addRow("Report Name:", self.reportName)
+
+        self.reportDesc = QLineEdit()
+        self.reportDesc.setPlaceholderText("Report Description Default")
+        reportLayer.addRow("ReportDescription:", self.reportDesc)
+
+        self.run = QVBoxLayout()
+        self.runDropdown = QComboBox()
+        runUpdateMain = QHBoxLayout()
+        runUpdateMain.addWidget(self.runDropdown)
+        adder = QPushButton()
+        adder.setText("Add")
+        runUpdateMain.addWidget(adder)
+        runUpdateMain.addStretch()
+        adder.clicked.connect(lambda: self.buttons("AddScan", adder))
+        self.update_ScanTypes()
+        updateHolder = QWidget()
+        updateHolder.setLayout(runUpdateMain)
+
+        self.run.addWidget(updateHolder)
+        RunHolder = QWidget()
+        RunHolder.setLayout(self.run)
+        reportLayer.addRow("Run Type(s):", RunHolder)
+        buttonWidget = util.make_saveCancel(self, 1)
+
+        reportLayer.addRow(orLabel)
+
+        self.runChoices = QVBoxLayout()
+        self.runType = QComboBox()
+        runUpdate = QHBoxLayout()
+        runUpdate.addWidget(self.runType)
+        adder = QPushButton()
+        adder.setText("Add")
+        runUpdate.addWidget(adder)
+        runUpdate.addStretch()
+        adder.clicked.connect(lambda: self.buttons("AddScan", adder))
+        self.update_ScanTypes()
+        updateHolder = QWidget()
+        updateHolder.setLayout(runUpdate)
+
+        self.runChoices.addWidget(updateHolder)
+        runHolder = QWidget()
+        runHolder.setLayout(self.runChoices)
+        reportLayer.addRow("Run Type(s):", runHolder)
+        buttonWidget = util.make_saveCancel(self, 1)
+
+        self.run = QVBoxLayout()
+        self.runDropdown = QComboBox()
+        runUpdateMain = QHBoxLayout()
+        runUpdateMain.addWidget(self.runDropdown)
+        adder = QPushButton()
+        adder.setText("Add")
+        runUpdateMain.addWidget(adder)
+        runUpdateMain.addStretch()
+        adder.clicked.connect(lambda: self.buttons("AddScan", adder))
+        self.update_ScanTypes()
+        updateHolder = QWidget()
+        updateHolder.setLayout(runUpdateMain)
+
+        self.run.addWidget(updateHolder)
+        RunHolder = QWidget()
+        RunHolder.setLayout(self.run)
+        reportLayer.addRow("Scan Type(s):", RunHolder)
+        buttonWidget = util.make_saveCancel(self, 1)
+
+        generateButton = QPushButton("Generate")
+        cancelButton = QPushButton("Cancel")
+
+        reportLayer.addWidget(generateButton)
+        generateButton.clicked.connect(lambda: self.buttons("Generate", generateButton))
+        cancelButton.clicked.connect(lambda: self.buttons("Cancel", cancelButton))
+        reportLayer.addWidget(cancelButton)
+        self.reportConfig = QDockWidget()
+        self.reportConfig.setTitleBarWidget(menuTitle)
+
+        self.reportConfig.setWidget(main)
+        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.reportConfig)
+        self.reportConfig.setVisible(False)
+        return
+
+    
     def edit(self):
         menuTitle = QLabel()
         menuTitle.setText("  Run Table  ")
@@ -594,6 +703,24 @@ class RunSection():
             self.path.setText("")
             self.importFile.setText("")
 
+        elif buttonName == "Generate":
+            fileName, _ = QFileDialog.getSaveFileName(self.win, "Export File Name", "./", "*.xml")
+            if fileName:
+                file = open(fileName, "wb")
+                root = xml.Element("XMLReport")
+
+                name = xml.SubElement(root, "RunName")
+                desc = xml.SubElement(root, "RunDescription")
+                scanType = xml.SubElement(root, "ScanType")
+                runType = xml.SubElement(root, "RunType")
+
+                name.text = self.reportName.text()
+                desc.text = self.reportDesc.text()
+                scanType.text = self.runType.currentText()
+                tree = xml.ElementTree(root)
+                tree.write(file, pretty_print=True)
+                file.close()   
+            
         elif buttonName == "Export":
             fileName, _ = QFileDialog.getSaveFileName(self.win, "Export File Name", "./", "*.xml")
             if fileName:
@@ -624,11 +751,13 @@ class RunSection():
                 self.runConfiguration.setVisible(False)
                 self.toolImport.setVisible(False)
                 self.scanList.setVisible(True)
+                self.scanList.setVisible(True)
                 self.push.setText("Configure a Run")
             else: 
                 self.currMode = 1
                 self.runConfiguration.setVisible(True)
                 self.toolImport.setVisible(True)
+                self.reportConfig.setVisible(False)
                 self.scanList.setVisible(False)
                 self.push.setText("View Scan Output")
         elif buttonName == "Import":
@@ -732,12 +861,15 @@ class RunSection():
         self.toolImport.setVisible(False)
         self.toolList.setVisible(False)
         self.scanList.setVisible(False)
+        self.reportConfig.setVisible(False)
 
     def show(self):
         if self.currMode == 1:
             self.runConfiguration.setVisible(True)
+            self.reportConfig.setVisible(False)
             self.toolImport.setVisible(True)
         else: 
             self.scanList.setVisible(True)
+            self.reportConfig.setVisible(True)
         self.toolList.setVisible(True)
         self.update_ScanTypes()
