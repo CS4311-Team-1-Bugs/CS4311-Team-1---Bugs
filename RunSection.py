@@ -223,10 +223,11 @@ class RunSection():
         self.toolList.setVisible(False)
 
     def update_ScanTypes(self):
-        self.scanList = [ ]
+        self.scansToAdd = []
         for x in self.tools.find():
-            self.scanList.append(x[ "Name" ])
-        self.scanType.addItems(self.scanList)
+            self.scansToAdd.append(x[ "Name" ])
+        self.scanType.clear()
+        self.scanType.addItems(self.scansToAdd)
 
     def drawTable(self, reversed=0):
         table = self.tableWidget
@@ -479,8 +480,6 @@ class RunSection():
             print("Here in start area")
             if self.runningRun is None:
                 
-                
-                
                 run_query = {"_id": ObjectId(button.id)}
                 run = self.config.find_one(run_query)
                 scan_query = {"Run_id": run["_id"]}
@@ -508,46 +507,6 @@ class RunSection():
                 run_query = {"_id": self.runningRun}
                 run = self.config.find_one(run_query)
                 self.dialogs("Unable to execute Run", "Unable to execute requested run. Run {} is still in progress".format(run["Run Name"]), 1)
-                
-            """
-            # since the id is not working then i need to just pretend that i do have it.
-            #          self.config.find()
-            start = self.dialogs("Starting Run", "Run has been started")
-            #          print(self.config)
-            sampleS = self.tools.find()
-            for i in sampleS:
-                print(i)
-            #               print("_id", i['_id'])
-            #              print("toolname " ,i['Scan Type'])
-            # for testing
-            Id = ObjectId('60842f0f29a941469eca411b')
-            path = r"C:/Program Files (x86)/Nmap"  # this would be aquired from a query to the db instead
-            self.currid = Id
-            query = {"_id": Id}
-            matchingRun = self.config.find_one(query)
-            #        for runTools in matchingRun:  # i don't think i need this.
-            whitelist = matchingRun[ 'Target Whitelist' ]
-            whitelistFile = matchingRun[ 'Whitelist File' ]
-            blacklist = matchingRun[ 'Target Blacklist' ]
-            blacklistFile = matchingRun[ 'Blacklist File' ]
-            print(matchingRun)
-            query = {"Run_id": Id}
-            # toolquery ={"tool_id": ObjectId(self.ScanId)}
-            tooloutputs = self.tools.find(query)
-            if whitelist != None:
-                whitelistargs = f"-il {whitelist}"
-            else:
-                whitelistargs = f"{whitelist}"
-                # assemble blacklist args
-            #            if blacklist != NULL:
-            #                if isinstance(blacklist, file):
-            #                    blacklistargs
-            argslist = f"{path} {whitelist}"
-            print(argslist)
-            p1 = subprocess.run([ path, whitelist ], capture_output=True)
-            print(p1.stderr)
-            print(p1.stdout.decode())
-            """
 
         elif buttonName == "Remove":
             ret = self.dialogs("Scan Type Removal", "Remove {} from the selected scans?".format(button))
@@ -572,10 +531,21 @@ class RunSection():
             # add it
             self.scanChoices.addWidget(holder)
             removeButt.clicked.connect(lambda: self.buttons("Remove", choice))
-        elif "Pause" in buttonName:
-            pause = self.dialogs("Pausing Run", "Run has been paused")
-        elif "Stop" in buttonName:
-            stop = self.dialogs("Stopping Run", "Run has been stopped")
+        elif "pause" in buttonName:
+            for i in range(len(self.proceses)):
+                if self.processes[i][1] == 0:
+                    self.processes[i][1] = 1
+                    p = psutil.Process(self.processes[i][2].pid)
+                    p.suspend()
+                else: 
+                     self.processes[i][1] = 0
+                     p = psutil.Process(self.processes[i][2].pid)
+                     p.resume()
+        elif "stop" in buttonName: 
+            for i in reversed(range(len(self.processes))): 
+                self.processes[i][2].terminate()
+                self.processes.pop(i)
+            self.runningRun = None
 
         elif "Save" in buttonName:
             name = self.runName.text()
@@ -749,3 +719,4 @@ class RunSection():
         else: 
             self.scanList.setVisible(True)
         self.toolList.setVisible(True)
+        self.update_ScanTypes()
