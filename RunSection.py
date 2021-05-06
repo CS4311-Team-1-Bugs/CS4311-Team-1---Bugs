@@ -479,7 +479,7 @@ class RunSection():
         elif "play" in buttonName:
             print("Here in start area")
             if self.runningRun is None:
-                
+                updater = {"$set": {"Status": "In Progress"}}
                 run_query = {"_id": ObjectId(button.id)}
                 run = self.config.find_one(run_query)
                 scan_query = {"Run_id": run["_id"]}
@@ -503,6 +503,9 @@ class RunSection():
                     inserter = {"Scan_id": scan["_id"], "Specification": "Tool Arguments", "Data": self.toString(argumentList)}
                     self.scanOutputs.insert_one(inserter)
                     self.processes.append([scan["_id"], 0, subprocess.Popen(argumentList, stdout = subprocess.PIPE)])
+                self.runningRun = button.id
+                self.config.update_one(run_query, updater)
+                self.scans.update_many(scan_query, updater)
             else: 
                 run_query = {"_id": self.runningRun}
                 run = self.config.find_one(run_query)
@@ -532,12 +535,22 @@ class RunSection():
             self.scanChoices.addWidget(holder)
             removeButt.clicked.connect(lambda: self.buttons("Remove", choice))
         elif "pause" in buttonName:
-            for i in range(len(self.processes)):
-                if self.processes[i][1] == 0:
+            run_query = {"_id": ObjectId(button.id)}
+            scan_query = {"Run_id": ObjectId(button.id)}
+            run = self.config.find_one(run_query)
+            if run["Status"] != "Paused":
+                updater = {"$set":{"Status": "paused"}}
+                self.config.update_many(run_query, updater)
+                self.scans.update_many(scan_query, updater)
+                for i in range(len(self.processes)):
                     self.processes[i][1] = 1
                     p = psutil.Process(self.processes[i][2].pid)
                     p.suspend()
-                else: 
+            else: 
+                updater = {"$set": {"Status": "In Progress"}}
+                self.config.update_many(run_query, updater)
+                self.scans.update_many(scan_query, updater)
+                for i in range(len(self.processes)):
                      self.processes[i][1] = 0
                      p = psutil.Process(self.processes[i][2].pid)
                      p.resume()
@@ -683,12 +696,20 @@ class RunSection():
                     self.handleOutput(self.processes[i][0],str(out.decode("utf-8")), str(err.decode("utf-8")))
                     self.processes.pop(i)
         if len(self.processes) < 1: 
-            print("Now empty")
-            self.runningRun = None
+            if self.runningRun is None: 
+                pass
+            else:
+                query = {"_id": ObjectId(self.runningRun)}
+                updater = {"$set":{"Status": "Complete"}}
+                self.config.update_many(query, updater)
+                self.runningRun = None
                     
     #Inserts Data Into the output section
     def handleOutput(self, scan_id, output, errors):
         print("Gonna Insert the Data!")
+        scan_query = {"_id": scan_id}
+        updater = {"$set": {"Status": "Completed"}}
+        self.scans.update_one(scan_query, updater)
         inserter1 = {"Scan_id": scan_id, "Specification": "General Output", "Data": output}
         inserter2 = {"Scan_id": scan_id, "Specification": "Errors", "Data": errors}
         self.scanOutputs.insert_one(inserter1)
