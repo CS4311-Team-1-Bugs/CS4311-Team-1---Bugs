@@ -1,4 +1,5 @@
 import sys
+import time
 from PyQt5 import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
@@ -187,10 +188,10 @@ class RunSection():
         self.tableWidget.setCellWidget(0, 2, QLabel(" Status "))
         self.tableWidget.setCellWidget(0, 3, QLabel(" Scan "))
         header = self.tableWidget.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
         self.tableWidget.verticalHeader().hide()
         self.tableWidget.horizontalHeader().hide()
 
@@ -263,7 +264,7 @@ class RunSection():
             index += 1
 
         for i in range(1, self.tableWidget.rowCount()):
-            self.tableWidget.verticalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+            self.tableWidget.verticalHeader().setSectionResizeMode(i, QHeaderView.Stretch)
 
     def make_scanTable(self):
 
@@ -317,10 +318,10 @@ class RunSection():
         self.scanTable.setCellWidget(0, 4, QLabel("Status"))
         self.scanTable.setCellWidget(0, 5, QLabel("Control"))
         header = self.scanTable.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
         self.scanTable.verticalHeader().hide()
         self.scanTable.horizontalHeader().hide()
 
@@ -477,6 +478,9 @@ class RunSection():
         elif "play" in buttonName:
             print("Here in start area")
             if self.runningRun is None:
+                
+                
+                
                 run_query = {"_id": ObjectId(button.id)}
                 run = self.config.find_one(run_query)
                 scan_query = {"Run_id": run["_id"]}
