@@ -41,7 +41,7 @@ class RunSection():
             "mongodb+srv://aaron:EDVsK1hnYHJEWZry@seacluster.f3vdv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
         db = client[ 'Test' ]
         self.tools = db["Tools"]
-        self.config = db[ "Run Config" ]
+        self.config = db[ "Runs"]
         self.scans = db["Scans"]
         self.scanOutputs = db["scanOutput"]
         
@@ -152,7 +152,7 @@ class RunSection():
         self.runConfiguration.setTitleBarWidget(menuTitle)
 
         self.runConfiguration.setWidget(main)
-        self.win.addDockWidget(Qt.RightDockWidgetArea, self.runConfiguration)
+        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.runConfiguration)
         self.runConfiguration.setVisible(False)
         return
 
@@ -216,7 +216,7 @@ class RunSection():
         self.toolList = QDockWidget()
         self.toolList.setTitleBarWidget(menuTitle)
         self.toolList.setWidget(main)
-        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.toolList)
+        self.win.addDockWidget(Qt.RightDockWidgetArea, self.toolList)
         self.toolList.setVisible(False)
     def update_ScanTypes(self):
         self.scanList = []
@@ -230,6 +230,7 @@ class RunSection():
         index = 1
         tools = self.config.find()
         maxInd = self.config.count_documents({})
+        self.RunId = None
         if reversed:
             start, end, increment = maxInd - 1, -1, -1
         else:
@@ -246,14 +247,13 @@ class RunSection():
             Buttons = QWidget()
             ButtonLayout = QHBoxLayout()
             start = QTablePush(tool[ "_id" ], "play.png", self)
-            start.clicked.connect(lambda:self.buttons("Start",None))
             pause= QTablePush(tool[ "_id" ], "pause.png", self)
-            pause.clicked.connect(lambda:self.buttons("Pause",None))
             stop = QTablePush(tool[ "_id" ], "stop.png", self)
-            stop.clicked.connect(lambda:self.buttons("Stop",None))
+            output = QTablePush(tool["_id"], "output2.png", self)
             ButtonLayout.addWidget(start)
             ButtonLayout.addWidget(pause)
             ButtonLayout.addWidget(stop)
+            ButtonLayout.addWidget(output)
             Buttons.setLayout(ButtonLayout)
             table.setCellWidget(index, 2, Buttons)
             # table.setCellWidget(index, 2, QPushButton("Remove"))
@@ -349,50 +349,53 @@ class RunSection():
         self.scanList.setVisible(False)
     
     def drawScanTable(self, reversed = 0):
-        self.runID = "7"
-        query = {"Run_ID": self.runID}
-        table = self.scanTable
-        index = 1
-        scans = self.scans.find(query)
-        maxInd = self.scans.count_documents({})
-        
-        if reversed:
-            start, end, increment = maxInd-1, -1, -1
-        else: 
-            start, end, increment = 0, maxInd, 1
-        for i in range(start, end, increment):
-            scan = scans[i]
-            if index < table.rowCount():
-                pass
-            else:
-                table.insertRow(index)
-            table.setCellWidget(index, 0, QLabel(scan[ "Name" ]))
-            table.setCellWidget(index, 1, QLabel(scan[ "Exec#" ]))
-            table.setCellWidget(index, 2, QLabel(scan[ "Start" ]))
-            table.setCellWidget(index, 3, QLabel(scan[ "End" ]))
-            table.setCellWidget(index, 4, QLabel(scan[ "Status" ]))
+        if self.RunId is not None: 
+            print("here")
+            query = {"Run_id": ObjectId(self.RunId)}
+            table = self.scanTable
+            index = 1
+            scans = self.scans.find(query)
+            maxInd = self.scans.count_documents({})
             
-            Buttons = QWidget()
-            ButtonLayout = QHBoxLayout()
-            start = QTablePush(scan[ "_id" ], "play.png", self)
-            #start.clicked.connect(lambda:self.buttons("Start",None))
-            pause= QTablePush(scan[ "_id" ], "pause.png", self)
-            #pause.clicked.connect(lambda:self.buttons("Pause",None))
-            stop = QTablePush(scan[ "_id" ], "stop.png", self)
-            #stop.clicked.connect(lambda:self.buttons("Stop",None))
-            output = QTablePush(scan["_id"], "output.png", self)
-            ButtonLayout.addWidget(start)
-            ButtonLayout.addWidget(pause)
-            ButtonLayout.addWidget(stop)
-            ButtonLayout.addWidget(output)
-            Buttons.setLayout(ButtonLayout)
-            table.setCellWidget(index, 5, Buttons)
-            #table.setCellWidget(index, 2, QPushButton("Remove"))
-            table.setCellWidget(index, 6, QLabel(str(scan[ "_id" ])))
-            index += 1
-            
-        for i in range(1, self.scanTable.rowCount()):
-            self.scanTable.verticalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
+            if reversed:
+                start, end, increment = maxInd-1, -1, -1
+            else: 
+                start, end, increment = 0, maxInd, 1
+            for i in range(start, end, increment):
+                scan = scans[i]
+                if index < table.rowCount():
+                    pass
+                else:
+                    table.insertRow(index)
+                tool_query = {"_id": scan["Tool_id"]}
+                name = self.tools.find_one(tool_query)["Name"]
+                table.setCellWidget(index, 0, QLabel(name))
+                table.setCellWidget(index, 1, QLabel(scan[ "Exec#" ]))
+                table.setCellWidget(index, 2, QLabel(scan[ "Start" ]))
+                table.setCellWidget(index, 3, QLabel(scan[ "End" ]))
+                table.setCellWidget(index, 4, QLabel(scan[ "Status" ]))
+                
+                Buttons = QWidget()
+                ButtonLayout = QHBoxLayout()
+                start = QTablePush(scan[ "_id" ], "play.png", self)
+                #start.clicked.connect(lambda:self.buttons("Start",None))
+                pause= QTablePush(scan[ "_id" ], "pause.png", self)
+                #pause.clicked.connect(lambda:self.buttons("Pause",None))
+                stop = QTablePush(scan[ "_id" ], "stop.png", self)
+                #stop.clicked.connect(lambda:self.buttons("Stop",None))
+                output = QTablePush(scan["_id"], "output.png", self)
+                ButtonLayout.addWidget(start)
+                ButtonLayout.addWidget(pause)
+                ButtonLayout.addWidget(stop)
+                ButtonLayout.addWidget(output)
+                Buttons.setLayout(ButtonLayout)
+                table.setCellWidget(index, 5, Buttons)
+                #table.setCellWidget(index, 2, QPushButton("Remove"))
+                table.setCellWidget(index, 6, QLabel(str(scan[ "_id" ])))
+                index += 1
+                
+            for i in range(1, self.scanTable.rowCount()):
+                self.scanTable.verticalHeader().setSectionResizeMode(i, QtWidgets.QHeaderView.ResizeToContents)
             
         
     
@@ -460,7 +463,7 @@ class RunSection():
         self.toolImport = QDockWidget()
         self.toolImport.setTitleBarWidget(menuTitle)
         self.toolImport.setWidget(importContainer)
-        self.win.addDockWidget(Qt.RightDockWidgetArea, self.toolImport)
+        self.win.addDockWidget(Qt.LeftDockWidgetArea, self.toolImport)
         self.toolImport.setVisible(False)
 
     def buttons(self, buttonName, button):
@@ -514,7 +517,6 @@ class RunSection():
                 whitelistargs = f"{whitelist}"
                 # assemble blacklist args
                 
-                
 
 #            if blacklist != NULL:
 #                if isinstance(blacklist, file):
@@ -563,12 +565,21 @@ class RunSection():
             blipText = self.BLIPtext.toPlainText()
             blipFile = self.bPath.text()
             runFile = self.importFile.text()
-            scan = self.ScanType.currentText()
 
             inputStr = {"Run Name": name, "Run Description": description, "Target Whitelist": wlipText,
-                        "Whitelist File": wlipFile, "Target Blacklist": blipText, "Blacklist File": blipFile,"Scan Type":scan,
-                        "Run Configuration File": runFile}
-            self.config.insert_one(inputStr)
+                        "Whitelist File": wlipFile, "Target Blacklist": blipText, "Blacklist File": blipFile,
+                        "Run Configuration File": runFile, "Status": "Configured"}
+            runid = self.config.insert(inputStr)
+            print(runid)
+            for i in range(1,self.scanChoices.count()):
+                scanQuery = {"Name": str(self.scanChoices.itemAt(i).widget().layout().itemAt(0).widget().text())}
+                tool = self.tools.find_one(scanQuery)
+                print(tool)
+                tool_id = tool["_id"]
+                inputScan = {"Tool_id": tool_id, "Exec#": "7", "Run_id": runid, "Start": "n/a", "End": "n/a", "Status": "Configured"}
+                z = self.scans.insert_one(inputScan)
+            for i in reversed(range(1,self.scanChoices.count())): 
+                self.scanChoices.itemAt(i).widget().setParent(None)
             self.drawTable()
         elif "Cancel" in buttonName:
             self.runName.setText("")
@@ -628,10 +639,14 @@ class RunSection():
                 self.bPath.setText(path2)
             if scanType is not None:
                 self.ScanType.setText(scanType)
-        elif buttonName == "output": 
-            self.ScanId = button.id
-            self.draw_tabs()
-            self.currRunRunning = 0;
+        elif "output" in buttonName:
+            if buttonName == "output":
+                self.ScanId = button.id
+                self.draw_tabs()
+            else: 
+                self.RunId = button.id
+                self.ScanId = None
+                self.drawScanTable()
         
 
 
