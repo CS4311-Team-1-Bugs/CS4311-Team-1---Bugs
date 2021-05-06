@@ -532,7 +532,7 @@ class RunSection():
             self.scanChoices.addWidget(holder)
             removeButt.clicked.connect(lambda: self.buttons("Remove", choice))
         elif "pause" in buttonName:
-            for i in range(len(self.proceses)):
+            for i in range(len(self.processes)):
                 if self.processes[i][1] == 0:
                     self.processes[i][1] = 1
                     p = psutil.Process(self.processes[i][2].pid)
